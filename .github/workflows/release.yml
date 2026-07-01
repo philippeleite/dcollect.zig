@@ -1,0 +1,40 @@
+name: "tagged-release"
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  tagged-release:
+    name: "Tagged Release"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: "Checkout code"
+        uses: actions/checkout@v4
+
+      - name: "Setup zig"
+        uses: mlugg/setup-zig@v2
+        with:
+          version: "0.16.0"
+
+      - name: "Build binaries"
+        run: |
+          zig build -Doptimize=ReleaseSafe -Dstrip=true -Dsingle-threaded=true -Dtarget=x86_64-windows -Dcpu=skylake
+          zip -jm dcollect-x86_64-windows.zip zig-out/bin/dcollect.exe
+          
+          zig build -Doptimize=ReleaseSafe -Dstrip=true -Dsingle-threaded=true -Dtarget=x86_64-linux-gnu -Dcpu=skylake
+          zip -jm dcollect-x86_64-linux-gnu.zip zig-out/bin/dcollect
+          
+          zig build -Doptimize=ReleaseSafe -Dstrip=true -Dsingle-threaded=true -Dtarget=aarch64-macos -Dcpu=apple_m1
+          zip -jm dcollect-aarch64-macos.zip zig-out/bin/dcollect
+
+      - name: "Create release"
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "*.zip"
+          generateReleaseNotes: true # Automatically populates changes from commits
+          allowUpdates: true # Safely lets you update the release if a build re-runs
