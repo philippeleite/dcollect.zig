@@ -1,342 +1,9 @@
 const std = @import("std");
 const c = @import("sqlite");
 const util = @import("util.zig");
-const records = @import("records.zig");
-const RecordD = records.RecordD;
-const RecordA = records.RecordA;
-const RecordV = records.RecordV;
-
-const tab_record_d =
-    \\ DROP TABLE IF EXISTS record_d;
-    \\ CREATE TABLE record_d (
-    \\     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    \\     dcddsnam TEXT NOT NULL,
-    \\     dcdemngd BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcdedvvr BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcdnospc BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcdvsami BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcdnofm1 BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcdracfd BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcdsmsm BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcdtemp BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcdpdse BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcdgds BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcdreblk BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcdchind BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcdckdsi BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcdnovvr BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcdintcg BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcdinicf BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcdallfg BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcdusefg BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcdsecfg BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcdnmbfg BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcdpdsex BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcdstrp BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcdddmex BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcdcpoit BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcdgt64k BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcdcmptv BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcddsgis BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcddsgps BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcddsgda BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcddsgpo BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcddsgu BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcddsggs BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcddsgvs BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcdrecfm TEXT NOT NULL DEFAULT '',
-    \\     dcdrecft BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcdrecfb BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcdrecfs BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcdrecfa BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcdrecfc BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcdnmext SMALLINT NOT NULL DEFAULT 0,
-    \\     dcdvolsr TEXT NOT NULL DEFAULT '',
-    \\     dcdbklng SMALLINT NOT NULL DEFAULT 0,
-    \\     dcdlrecl SMALLINT NOT NULL DEFAULT 0,
-    \\     dcdallsp INTEGER NOT NULL DEFAULT 0,
-    \\     dcdusesp INTEGER NOT NULL DEFAULT 0,
-    \\     dcdscall INTEGER NOT NULL DEFAULT 0,
-    \\     dcdnmblk INTEGER NOT NULL DEFAULT 0,
-    \\     dcdcredt DATE NOT NULL DEFAULT '0000-00-00',
-    \\     dcdexpdt DATE NOT NULL DEFAULT '0000-00-00',
-    \\     dcdlstrf DATE NOT NULL DEFAULT '0000-00-00',
-    \\     dcddsser TEXT NOT NULL DEFAULT '',
-    \\     dcdvolsq SMALLINT NOT NULL DEFAULT 0,
-    \\     dcdlbkdt DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
-    \\     dcdatcl  TEXT NOT NULL DEFAULT '',
-    \\     dcdstgcl TEXT NOT NULL DEFAULT '',
-    \\     dcdmgtcl TEXT NOT NULL DEFAULT '',
-    \\     dcdstgrp TEXT NOT NULL DEFAULT '',
-    \\     dcdccsid TEXT NOT NULL DEFAULT '',
-    \\     dcdudsiz BIGINT NOT NULL DEFAULT 0,
-    \\     dcdcudsz BIGINT NOT NULL DEFAULT 0,
-    \\     dcddscnt SMALLINT NOT NULL DEFAULT 0,
-    \\     dcdovera INTEGER NOT NULL DEFAULT 0,
-    \\     dcdacct  TEXT NOT NULL DEFAULT '',
-    \\     dcdallfx BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcdusefx BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcdscafx BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcdnmbfx BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcdjbnmc TEXT NOT NULL DEFAULT '',
-    \\     dcdstnmc TEXT NOT NULL DEFAULT '',
-    \\     dcdallsx BIGINT NOT NULL DEFAULT 0,
-    \\     dcdusesx BIGINT NOT NULL DEFAULT 0,
-    \\     dcdscalx BIGINT NOT NULL DEFAULT 0,
-    \\     dcdnmblx BIGINT NOT NULL DEFAULT 0,
-    \\     dcdxpsev SMALLINT NOT NULL DEFAULT 0,
-    \\     dcdctype SMALLINT NOT NULL DEFAULT 0,
-    \\     dcdtype  SMALLINT NOT NULL DEFAULT 0,
-    \\     dcdklbl  TEXT NOT NULL DEFAULT ''
-    \\ );
-;
-
-const sqlD =
-    \\ INSERT INTO record_d (
-    \\     dcddsnam, 
-    \\     dcdemngd, 
-    \\     dcdedvvr, 
-    \\     dcdnospc, 
-    \\     dcdvsami, 
-    \\     dcdnofm1, 
-    \\     dcdracfd, 
-    \\     dcdsmsm, 
-    \\     dcdtemp, 
-    \\     dcdpdse, 
-    \\     dcdgds, 
-    \\     dcdreblk, 
-    \\     dcdchind, 
-    \\     dcdckdsi, 
-    \\     dcdnovvr, 
-    \\     dcdintcg, 
-    \\     dcdinicf, 
-    \\     dcdallfg, 
-    \\     dcdusefg, 
-    \\     dcdsecfg, 
-    \\     dcdnmbfg, 
-    \\     dcdpdsex, 
-    \\     dcdstrp, 
-    \\     dcdddmex, 
-    \\     dcdcpoit, 
-    \\     dcdgt64k, 
-    \\     dcdcmptv, 
-    \\     dcddsgis, 
-    \\     dcddsgps, 
-    \\     dcddsgda, 
-    \\     dcddsgpo, 
-    \\     dcddsgu, 
-    \\     dcddsggs, 
-    \\     dcddsgvs, 
-    \\     dcdrecfm,  
-    \\     dcdrecft, 
-    \\     dcdrecfb, 
-    \\     dcdrecfs, 
-    \\     dcdrecfa, 
-    \\     dcdrecfc, 
-    \\     dcdnmext, 
-    \\     dcdvolsr, 
-    \\     dcdbklng, 
-    \\     dcdlrecl, 
-    \\     dcdallsp, 
-    \\     dcdusesp, 
-    \\     dcdscall, 
-    \\     dcdnmblk, 
-    \\     dcdcredt, 
-    \\     dcdexpdt, 
-    \\     dcdlstrf, 
-    \\     dcddsser, 
-    \\     dcdvolsq, 
-    \\     dcdlbkdt, 
-    \\     dcdatcl, 
-    \\     dcdstgcl, 
-    \\     dcdmgtcl, 
-    \\     dcdstgrp, 
-    \\     dcdccsid, 
-    \\     dcdudsiz, 
-    \\     dcdcudsz, 
-    \\     dcddscnt, 
-    \\     dcdovera, 
-    \\     dcdacct, 
-    \\     dcdallfx, 
-    \\     dcdusefx, 
-    \\     dcdscafx, 
-    \\     dcdnmbfx, 
-    \\     dcdjbnmc, 
-    \\     dcdstnmc, 
-    \\     dcdallsx, 
-    \\     dcdusesx, 
-    \\     dcdscalx, 
-    \\     dcdnmblx, 
-    \\     dcdxpsev, 
-    \\     dcdctype, 
-    \\     dcdtype, 
-    \\     dcdklbl) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?); 
-    \\
-;
-
-const tab_record_a =
-    \\ DROP TABLE IF EXISTS record_a;
-    \\ CREATE TABLE record_a (
-    \\     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    \\     dcadsnam TEXT NOT NULL DEFAULT '',
-    \\     dcaassoc TEXT NOT NULL DEFAULT '',
-    \\     dcaksds BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcaesds BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcarrds BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcalds BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcakrds BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcaaix BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcadata BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcaindex BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcakr1st BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcaixupg BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcavrrds BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcanstat BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcasrci BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcag4g BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcazfs BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcahurba BIGINT NOT NULL DEFAULT 0,
-    \\     dcaharba BIGINT NOT NULL DEFAULT 0,
-    \\     dcanlr INTEGER NOT NULL DEFAULT 0,
-    \\     dcadlr INTEGER NOT NULL DEFAULT 0,
-    \\     dcainr INTEGER NOT NULL DEFAULT 0,
-    \\     dcaupr INTEGER NOT NULL DEFAULT 0,
-    \\     dcartr INTEGER NOT NULL DEFAULT 0,
-    \\     dcaasp INTEGER NOT NULL DEFAULT 0,
-    \\     dcacis INTEGER NOT NULL DEFAULT 0,
-    \\     dcacas INTEGER NOT NULL DEFAULT 0,
-    \\     dcaexc INTEGER NOT NULL DEFAULT 0,
-    \\     dcarkp SMALLINT NOT NULL DEFAULT 0,
-    \\     dcakln SMALLINT NOT NULL DEFAULT 0,
-    \\     dcahurbc BIGINT NOT NULL DEFAULT 0,
-    \\     dcaharbc BIGINT NOT NULL DEFAULT 0,
-    \\     dcacisz INTEGER NOT NULL DEFAULT 0,
-    \\     dcacaci INTEGER NOT NULL DEFAULT 0,
-    \\     dcatrdt DATE NOT NULL DEFAULT '0000-00-00'
-    \\ );
-;
-
-const sqlA =
-    \\ INSERT INTO record_a (
-    \\     dcadsnam, 
-    \\     dcaassoc, 
-    \\     dcaksds, 
-    \\     dcaesds, 
-    \\     dcarrds, 
-    \\     dcalds, 
-    \\     dcakrds, 
-    \\     dcaaix, 
-    \\     dcadata, 
-    \\     dcaindex, 
-    \\     dcakr1st, 
-    \\     dcaixupg, 
-    \\     dcavrrds, 
-    \\     dcanstat, 
-    \\     dcasrci, 
-    \\     dcag4g, 
-    \\     dcazfs, 
-    \\     dcahurba, 
-    \\     dcaharba, 
-    \\     dcanlr, 
-    \\     dcadlr, 
-    \\     dcainr, 
-    \\     dcaupr, 
-    \\     dcartr, 
-    \\     dcaasp, 
-    \\     dcacis, 
-    \\     dcacas, 
-    \\     dcaexc, 
-    \\     dcarkp, 
-    \\     dcakln, 
-    \\     dcahurbc, 
-    \\     dcaharbc, 
-    \\     dcacisz, 
-    \\     dcacaci, 
-    \\     dcatrdt) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
-    \\
-;
-
-const tab_record_v =
-    \\ DROP TABLE IF EXISTS record_v;
-    \\ CREATE TABLE record_v (
-    \\     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    \\     dcvvolsr TEXT NOT NULL DEFAULT '',
-    \\     dcvinxex BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcvinxen BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcvuspvt BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcvuspub BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcvussto BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcvshrds BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcvmangd BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcvinitl BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcvevlcp BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcvebytk BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcvelspc BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcvperct SMALLINT NOT NULL DEFAULT 0,
-    \\     dcvfresp INTEGER NOT NULL DEFAULT 0,
-    \\     dcvalloc INTEGER NOT NULL DEFAULT 0,
-    \\     dcvvlcap INTEGER NOT NULL DEFAULT 0,
-    \\     dcvfragi INTEGER NOT NULL DEFAULT 0,
-    \\     dcvlgext INTEGER NOT NULL DEFAULT 0,
-    \\     dcvfrext INTEGER NOT NULL DEFAULT 0,
-    \\     dcvfdscb INTEGER NOT NULL DEFAULT 0,
-    \\     dcvfvirs INTEGER NOT NULL DEFAULT 0,
-    \\     dcvdvtyp TEXT NOT NULL DEFAULT '',
-    \\     dcvdvnum TEXT NOT NULL DEFAULT '',
-    \\     dcvsgtcl TEXT NOT NULL DEFAULT '',
-    \\     dcvdptyp TEXT NOT NULL DEFAULT '',
-    \\     dcvtrpct SMALLINT NOT NULL DEFAULT 0,
-    \\     dcvcylmg BOOLEAN NOT NULL DEFAULT 0,
-    \\     dcvtrfsp INTEGER NOT NULL DEFAULT 0,
-    \\     dcvtralc INTEGER NOT NULL DEFAULT 0,
-    \\     dcvtrvlc INTEGER NOT NULL DEFAULT 0,
-    \\     dcvtrfrg INTEGER NOT NULL DEFAULT 0,
-    \\     dcvtrlge INTEGER NOT NULL DEFAULT 0,
-    \\     dcvtrfrx INTEGER NOT NULL DEFAULT 0,
-    \\     dcvfcyls INTEGER NOT NULL DEFAULT 0,
-    \\     dcvftrks INTEGER NOT NULL DEFAULT 0
-    \\ );
-;
-
-const sqlV =
-    \\ INSERT INTO record_v (
-    \\     dcvvolsr, 
-    \\     dcvinxex, 
-    \\     dcvinxen, 
-    \\     dcvuspvt, 
-    \\     dcvuspub, 
-    \\     dcvussto, 
-    \\     dcvshrds, 
-    \\     dcvmangd, 
-    \\     dcvinitl, 
-    \\     dcvevlcp, 
-    \\     dcvebytk, 
-    \\     dcvelspc, 
-    \\     dcvperct, 
-    \\     dcvfresp, 
-    \\     dcvalloc, 
-    \\     dcvvlcap, 
-    \\     dcvfragi, 
-    \\     dcvlgext, 
-    \\     dcvfrext, 
-    \\     dcvfdscb, 
-    \\     dcvfvirs, 
-    \\     dcvdvtyp, 
-    \\     dcvdvnum, 
-    \\     dcvsgtcl, 
-    \\     dcvdptyp, 
-    \\     dcvtrpct,
-    \\     dcvcylmg, 
-    \\     dcvtrfsp, 
-    \\     dcvtralc, 
-    \\     dcvtrvlc, 
-    \\     dcvtrfrg, 
-    \\     dcvtrlge, 
-    \\     dcvtrfrx, 
-    \\     dcvfcyls, 
-    \\     dcvftrks) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
-    \\
-;
+const RecordD = @import("recordD.zig").RecordD;
+const RecordA = @import("recordA.zig").RecordA;
+const RecordV = @import("recordV.zig").RecordV;
 
 pub const Database = struct {
     db: *c.sqlite3 = undefined,
@@ -361,13 +28,13 @@ pub const Database = struct {
 
         var database = Database{ .db = db.? };
 
-        _ = &database.execute(tab_record_d);
-        _ = &database.execute(tab_record_a);
-        _ = &database.execute(tab_record_v);
+        _ = try database.execute(RecordD.tableSQL);
+        _ = try database.execute(RecordA.tableSQL);
+        _ = try database.execute(RecordV.tableSQL);
 
         const stmtD = blk: {
             var stmt: ?*c.sqlite3_stmt = undefined;
-            if (c.SQLITE_OK != c.sqlite3_prepare_v2(db.?, sqlD, sqlD.len + 1, &stmt, null)) {
+            if (c.SQLITE_OK != c.sqlite3_prepare_v2(db.?, RecordD.insertSQL, RecordD.insertSQL.len + 1, &stmt, null)) {
                 std.log.err("Can't create prepare statement: {s}\n", .{c.sqlite3_errmsg(db.?)});
                 return error.prepareStmt;
             }
@@ -376,7 +43,7 @@ pub const Database = struct {
 
         const stmtA = blk: {
             var stmt: ?*c.sqlite3_stmt = undefined;
-            if (c.SQLITE_OK != c.sqlite3_prepare_v2(db.?, sqlA, sqlA.len + 1, &stmt, null)) {
+            if (c.SQLITE_OK != c.sqlite3_prepare_v2(db.?, RecordA.insertSQL, RecordA.insertSQL.len + 1, &stmt, null)) {
                 std.log.err("Can't create prepare statement: {s}\n", .{c.sqlite3_errmsg(db.?)});
                 return error.prepareStmt;
             }
@@ -385,7 +52,7 @@ pub const Database = struct {
 
         const stmtV = blk: {
             var stmt: ?*c.sqlite3_stmt = undefined;
-            if (c.SQLITE_OK != c.sqlite3_prepare_v2(db.?, sqlV, sqlV.len + 1, &stmt, null)) {
+            if (c.SQLITE_OK != c.sqlite3_prepare_v2(db.?, RecordV.insertSQL, RecordV.insertSQL.len + 1, &stmt, null)) {
                 std.log.err("Can't create prepare statement: {s}\n", .{c.sqlite3_errmsg(db.?)});
                 return error.prepareStmt;
             }

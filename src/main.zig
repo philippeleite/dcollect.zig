@@ -3,9 +3,9 @@ const util = @import("util.zig");
 const zon = @import("zon");
 const records = @import("records.zig");
 const Header = records.Header;
-const RecordD = records.RecordD;
-const RecordA = records.RecordA;
-const RecordV = records.RecordV;
+const RecordD = @import("recordD.zig").RecordD;
+const RecordA = @import("recordA.zig").RecordA;
+const RecordV = @import("recordV.zig").RecordV;
 const Database = @import("db.zig").Database;
 
 const Context = struct {
@@ -119,7 +119,7 @@ const FileParser = struct {
         const stat = try std.Io.Dir.cwd().statFile(io, self.ctx.dcollect_file, .{});
         const file_size = stat.size;
         try self.ctx.print("DCOLLECT File: {s}\n", .{self.ctx.dcollect_file});
-        try self.ctx.print("DCOLLECT File size: {d} bytes\n", .{file_size});
+        try self.ctx.print("DCOLLECT File size: {d} bytes\n\n", .{file_size});
 
         const file = try std.Io.Dir.cwd().openFile(io, self.ctx.dcollect_file, .{});
         defer file.close(io);
@@ -176,11 +176,24 @@ const FileParser = struct {
                 // _ = &record_v; // Currently not processing RecordV, but we can add processing logic here if needed
                 try self.ctx.db.processRecordV(&record_v);
             } else {
-                std.debug.print("Unknown record type: {s}\n", .{rec_type});
-                break;
+                _ = reader.interface.take(header.dculeng) catch |err| {
+                    if (err == error.EndOfStream) {
+                        break;
+                    } else {
+                        return err;
+                    }
+                };
+                continue;
             }
         }
 
-        std.debug.print("Processed records: D: {d}, A: {d}, V: {d}\n", .{ countD, countA, countV });
+        try self.ctx.print("Processed records:\n", .{});
+        try self.ctx.print("+---------------------+\n", .{});
+        try self.ctx.print("| D     |  {d:>10} |\n", .{countD});
+        try self.ctx.print("+---------------------+\n", .{});
+        try self.ctx.print("| A     |  {d:>10} |\n", .{countA});
+        try self.ctx.print("+---------------------+\n", .{});
+        try self.ctx.print("| V     |  {d:>10} |\n", .{countV});
+        try self.ctx.print("+---------------------+\n", .{});
     }
 };
