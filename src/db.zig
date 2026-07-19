@@ -27,11 +27,10 @@ pub const Database = struct {
         }
 
         var database = Database{ .db = db.? };
-
+        _ = c.sqlite3_exec(database.db, "PRAGMA journal_mode=MEMORY;", null, null, null);
         _ = try database.execute(RecordD.tableSQL);
         _ = try database.execute(RecordA.tableSQL);
         _ = try database.execute(RecordV.tableSQL);
-        // _ = c.sqlite3_exec(database.db, "BEGIN;", null, null, null);
 
         const stmtD = blk: {
             var stmt: ?*c.sqlite3_stmt = undefined;

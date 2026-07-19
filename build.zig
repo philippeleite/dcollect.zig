@@ -42,7 +42,7 @@ pub fn build(b: *std.Build) void {
         .file = b.path("lib/sqlite/sqlite3.c"),
         .flags = &.{
             "-DSQLITE_DQS=0",
-            "-DSQLITE_DEFAULT_WAL_SYNCHRONOUS=1",
+            "-DSQLITE_DEFAULT_SYNCHRONOUS=0",
             "-DSQLITE_DEFAULT_MEMSTATUS=0",
             "-DSQLITE_DEFAULT_CACHE_SIZE=-32000",
             "-DSQLITE_USE_ALLOCA=1",
