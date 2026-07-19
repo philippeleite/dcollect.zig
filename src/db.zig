@@ -10,6 +10,7 @@ pub const Database = struct {
     stmtD: *c.sqlite3_stmt = undefined,
     stmtA: *c.sqlite3_stmt = undefined,
     stmtV: *c.sqlite3_stmt = undefined,
+    count: usize = 0,
 
     pub fn init(allocator: std.mem.Allocator, db_path: []const u8) !Database {
         const null_db = try allocator.dupeZ(u8, db_path);
@@ -17,8 +18,7 @@ pub const Database = struct {
 
         const flags =
             c.SQLITE_OPEN_READWRITE |
-            c.SQLITE_OPEN_CREATE |
-            c.SQLITE_OPEN_URI;
+            c.SQLITE_OPEN_CREATE;
 
         var db: ?*c.sqlite3 = undefined;
         if (c.SQLITE_OK != c.sqlite3_open_v2(null_db, &db, flags, null)) {
@@ -31,6 +31,7 @@ pub const Database = struct {
         _ = try database.execute(RecordD.tableSQL);
         _ = try database.execute(RecordA.tableSQL);
         _ = try database.execute(RecordV.tableSQL);
+        // _ = c.sqlite3_exec(database.db, "BEGIN;", null, null, null);
 
         const stmtD = blk: {
             var stmt: ?*c.sqlite3_stmt = undefined;
@@ -70,6 +71,7 @@ pub const Database = struct {
         _ = c.sqlite3_finalize(self.stmtD);
         _ = c.sqlite3_finalize(self.stmtA);
         _ = c.sqlite3_finalize(self.stmtV);
+        _ = c.sqlite3_exec(self.db, "COMMIT;", null, null, null);
         _ = c.sqlite3_close(self.db);
     }
 
@@ -84,30 +86,52 @@ pub const Database = struct {
     }
 
     pub fn processRecordD(self: *Database, record: *RecordD) !void {
+        self.begin();
         try self.bindRecordD(record);
         if (c.SQLITE_DONE != c.sqlite3_step(self.stmtD)) {
             std.log.err("Can't step cat stmt: {s}\n", .{c.sqlite3_errmsg(self.db)});
             return error.Step;
         }
         _ = c.sqlite3_reset(self.stmtD);
+        self.count += 1;
+        self.commit();
     }
 
     pub fn processRecordA(self: *Database, record: *RecordA) !void {
+        self.begin();
         try self.bindRecordA(record);
         if (c.SQLITE_DONE != c.sqlite3_step(self.stmtA)) {
             std.log.err("Can't step cat stmt: {s}\n", .{c.sqlite3_errmsg(self.db)});
             return error.Step;
         }
         _ = c.sqlite3_reset(self.stmtA);
+        self.count += 1;
+        self.commit();
     }
 
     pub fn processRecordV(self: *Database, record: *RecordV) !void {
+        self.begin();
         try self.bindRecordV(record);
         if (c.SQLITE_DONE != c.sqlite3_step(self.stmtV)) {
             std.log.err("Can't step cat stmt: {s}\n", .{c.sqlite3_errmsg(self.db)});
             return error.Step;
         }
         _ = c.sqlite3_reset(self.stmtV);
+        self.count += 1;
+        self.commit();
+    }
+
+    fn begin(self: *Database) void {
+        if (self.count == 0) {
+            _ = c.sqlite3_exec(self.db, "BEGIN;", null, null, null);
+        }
+    }
+
+    fn commit(self: *Database) void {
+        if (self.count >= 1000) {
+            _ = c.sqlite3_exec(self.db, "COMMIT;", null, null, null);
+            self.count = 0;
+        }
     }
 
     inline fn bindRecordD(self: *Database, record: *RecordD) !void {

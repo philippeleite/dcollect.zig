@@ -125,6 +125,7 @@ const FileParser = struct {
         defer file.close(io);
 
         self.ctx.db = try Database.init(allocator, self.ctx.sqlite_db_file);
+        defer self.ctx.db.deinit();
 
         var read_buffer: [4096]u8 = undefined;
         var reader = file.reader(io, &read_buffer);
