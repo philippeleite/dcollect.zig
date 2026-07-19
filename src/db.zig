@@ -331,11 +331,11 @@ pub const Database = struct {
         try self.bindBool(self.stmtV, 11, record.error_dcvebytk());
         try self.bindBool(self.stmtV, 12, record.error_dcvelspc());
         try self.bindInt(self.stmtV, 13, record.dcvperct);
-        try self.bindInt(self.stmtV, 14, record.dcvfresp);
-        try self.bindInt(self.stmtV, 15, record.dcvalloc);
-        try self.bindInt(self.stmtV, 16, record.dcvvlcap);
+        try self.bindInt64(self.stmtV, 14, record.dcvfresp);
+        try self.bindInt64(self.stmtV, 15, record.dcvalloc);
+        try self.bindInt64(self.stmtV, 16, record.dcvvlcap);
         try self.bindInt(self.stmtV, 17, record.dcvfragi);
-        try self.bindInt(self.stmtV, 18, record.dcvlgext);
+        try self.bindInt64(self.stmtV, 18, record.dcvlgext);
         try self.bindInt(self.stmtV, 19, record.dcvfrext);
         try self.bindInt(self.stmtV, 20, record.dcvfdscb);
         try self.bindInt(self.stmtV, 21, record.dcvfvirs);
@@ -353,11 +353,11 @@ pub const Database = struct {
 
         try self.bindInt(self.stmtV, 26, record.dcvtrpct);
         try self.bindInt(self.stmtV, 27, record.dcveavol);
-        try self.bindInt(self.stmtV, 28, record.dcvtrfsp);
-        try self.bindInt(self.stmtV, 29, record.dcvtralc);
-        try self.bindInt(self.stmtV, 30, record.dcvtrvlc);
+        try self.bindInt64(self.stmtV, 28, record.dcvtrfsp);
+        try self.bindInt64(self.stmtV, 29, record.dcvtralc);
+        try self.bindInt64(self.stmtV, 30, record.dcvtrvlc);
         try self.bindInt(self.stmtV, 31, record.dcvtrfrg);
-        try self.bindInt(self.stmtV, 32, record.dcvtrlge);
+        try self.bindInt64(self.stmtV, 32, record.dcvtrlge);
         try self.bindInt(self.stmtV, 33, record.dcvtrfrx);
         try self.bindInt(self.stmtV, 34, record.dcvfcyls);
         try self.bindInt(self.stmtV, 35, record.dcvftrks);
