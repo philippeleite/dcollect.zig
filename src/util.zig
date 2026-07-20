@@ -217,3 +217,7 @@ test "readU16" {
     const value = try readU16(&reader);
     try std.testing.expectEqual(32, value);
 }
+
+pub fn asUint(comptime T: type, comptime string: []const u8) T {
+    return @bitCast(string[0..string.len].*);
+}

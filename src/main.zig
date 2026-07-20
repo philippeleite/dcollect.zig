@@ -143,48 +143,55 @@ const FileParser = struct {
             };
             var rec_type = header.dcurctyp;
             util.bcd2asc(&rec_type);
-            if (std.mem.eql(u8, &rec_type, "D ")) {
-                var record_d = reader.interface.takeStruct(RecordD, .big) catch |err| {
-                    if (err == error.EndOfStream) {
-                        break;
-                    } else {
-                        return err;
-                    }
-                };
-                countD += 1;
-                // _ = &record_d; // Currently not processing RecordD, but we can add processing logic here if needed
-                try self.ctx.db.processRecordD(&record_d);
-            } else if (std.mem.eql(u8, &rec_type, "A ")) {
-                var record_a = reader.interface.takeStruct(RecordA, .big) catch |err| {
-                    if (err == error.EndOfStream) {
-                        break;
-                    } else {
-                        return err;
-                    }
-                };
-                countA += 1;
-                // _ = &record_a; // Currently not processing RecordA, but we can add processing logic here if needed
-                try self.ctx.db.processRecordA(&record_a);
-            } else if (std.mem.eql(u8, &rec_type, "V ")) {
-                var record_v = reader.interface.takeStruct(RecordV, .big) catch |err| {
-                    if (err == error.EndOfStream) {
-                        break;
-                    } else {
-                        return err;
-                    }
-                };
-                countV += 1;
-                // _ = &record_v; // Currently not processing RecordV, but we can add processing logic here if needed
-                try self.ctx.db.processRecordV(&record_v);
-            } else {
-                _ = reader.interface.take(header.dculeng) catch |err| {
-                    if (err == error.EndOfStream) {
-                        break;
-                    } else {
-                        return err;
-                    }
-                };
-                continue;
+            const int_type: u16 = @bitCast(rec_type);
+
+            switch (int_type) {
+                util.asUint(u16, "D ") => {
+                    var record_d = reader.interface.takeStruct(RecordD, .big) catch |err| {
+                        if (err == error.EndOfStream) {
+                            break;
+                        } else {
+                            return err;
+                        }
+                    };
+                    countD += 1;
+                    // _ = &record_d; // Currently not processing RecordD, but we can add processing logic here if needed
+                    try self.ctx.db.processRecordD(&record_d);
+                },
+                util.asUint(u16, "A ") => {
+                    var record_a = reader.interface.takeStruct(RecordA, .big) catch |err| {
+                        if (err == error.EndOfStream) {
+                            break;
+                        } else {
+                            return err;
+                        }
+                    };
+                    countA += 1;
+                    // _ = &record_a; // Currently not processing RecordA, but we can add processing logic here if needed
+                    try self.ctx.db.processRecordA(&record_a);
+                },
+                util.asUint(u16, "V ") => {
+                    var record_v = reader.interface.takeStruct(RecordV, .big) catch |err| {
+                        if (err == error.EndOfStream) {
+                            break;
+                        } else {
+                            return err;
+                        }
+                    };
+                    countV += 1;
+                    // _ = &record_v; // Currently not processing RecordV, but we can add processing logic here if needed
+                    try self.ctx.db.processRecordV(&record_v);
+                },
+                else => {
+                    _ = reader.interface.take(header.dculeng) catch |err| {
+                        if (err == error.EndOfStream) {
+                            break;
+                        } else {
+                            return err;
+                        }
+                    };
+                    continue;
+                },
             }
         }
 
