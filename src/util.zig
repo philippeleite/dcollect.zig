@@ -221,3 +221,13 @@ test "readU16" {
 pub fn asUint(comptime T: type, comptime string: []const u8) T {
     return @bitCast(string[0..string.len].*);
 }
+
+pub fn b3toInt(b3: [3]u8) u32 {
+    return std.mem.readInt(u24, &b3, .big);
+}
+
+test "b3toInt" {
+    const b3: [3]u8 = .{ 0x00, 0x00, 0x20 };
+    const value = b3toInt(b3);
+    try std.testing.expectEqual(32, value);
+}

@@ -4,12 +4,14 @@ const util = @import("util.zig");
 const RecordD = @import("recordD.zig").RecordD;
 const RecordA = @import("recordA.zig").RecordA;
 const RecordV = @import("recordV.zig").RecordV;
+const RecordDC = @import("recordDC.zig").RecordDC;
 
 pub const Database = struct {
     db: *c.sqlite3 = undefined,
     stmtD: *c.sqlite3_stmt = undefined,
     stmtA: *c.sqlite3_stmt = undefined,
     stmtV: *c.sqlite3_stmt = undefined,
+    stmtDC: *c.sqlite3_stmt = undefined,
     count: usize = 0,
 
     pub fn init(allocator: std.mem.Allocator, db_path: []const u8) !Database {
@@ -31,6 +33,7 @@ pub const Database = struct {
         _ = try database.execute(RecordD.tableSQL);
         _ = try database.execute(RecordA.tableSQL);
         _ = try database.execute(RecordV.tableSQL);
+        _ = try database.execute(RecordDC.tableSQL);
 
         const stmtD = blk: {
             var stmt: ?*c.sqlite3_stmt = undefined;
@@ -59,9 +62,19 @@ pub const Database = struct {
             break :blk stmt.?;
         };
 
+        const stmtDC = blk: {
+            var stmt: ?*c.sqlite3_stmt = undefined;
+            if (c.SQLITE_OK != c.sqlite3_prepare_v2(db.?, RecordDC.insertSQL, RecordDC.insertSQL.len + 1, &stmt, null)) {
+                std.log.err("Can't create prepare statement: {s}\n", .{c.sqlite3_errmsg(db.?)});
+                return error.prepareStmt;
+            }
+            break :blk stmt.?;
+        };
+
         database.stmtD = stmtD;
         database.stmtA = stmtA;
         database.stmtV = stmtV;
+        database.stmtDC = stmtDC;
 
         return database;
     }
@@ -116,6 +129,18 @@ pub const Database = struct {
             return error.Step;
         }
         _ = c.sqlite3_reset(self.stmtV);
+        self.count += 1;
+        self.commit();
+    }
+
+    pub fn processRecordDC(self: *Database, record: *RecordDC) !void {
+        self.begin();
+        try self.bindRecordDC(record);
+        if (c.SQLITE_DONE != c.sqlite3_step(self.stmtDC)) {
+            std.log.err("Can't step cat stmt: {s}\n", .{c.sqlite3_errmsg(self.db)});
+            return error.Step;
+        }
+        _ = c.sqlite3_reset(self.stmtDC);
         self.count += 1;
         self.commit();
     }
@@ -361,6 +386,135 @@ pub const Database = struct {
         try self.bindInt(self.stmtV, 33, record.dcvtrfrx);
         try self.bindInt(self.stmtV, 34, record.dcvfcyls);
         try self.bindInt(self.stmtV, 35, record.dcvftrks);
+    }
+
+    inline fn bindRecordDC(self: *Database, record: *RecordDC) !void {
+        util.bcd2asc(record.ddcname[0..record.ddcnmlen]);
+        try self.bindText(self.stmtDC, 1, record.ddcname[0..record.ddcnmlen]);
+        util.bcd2asc(&record.ddcuser);
+        try self.bindText(self.stmtDC, 2, &record.ddcuser);
+        util.bcd2asc(&record.ddcdate);
+        try self.bindText(self.stmtDC, 3, &record.ddcdate);
+        util.bcd2asc(&record.ddctime);
+        try self.bindText(self.stmtDC, 4, &record.ddctime);
+        util.bcd2asc(&record.ddcdesc);
+        try self.bindText(self.stmtDC, 5, &record.ddcdesc);
+        try self.bindBool(self.stmtDC, 6, record.spec1_ddcfrorg());
+        try self.bindBool(self.stmtDC, 7, record.spec1_ddcflrec());
+        try self.bindBool(self.stmtDC, 8, record.spec1_ddcfrfm());
+        try self.bindBool(self.stmtDC, 9, record.spec1_ddcfklen());
+        try self.bindBool(self.stmtDC, 10, record.spec1_ddcfkoff());
+        try self.bindBool(self.stmtDC, 11, record.spec1_ddcfexp());
+        try self.bindBool(self.stmtDC, 12, record.spec1_ddcfret());
+        try self.bindBool(self.stmtDC, 13, record.spec1_ddcfpsp());
+        try self.bindBool(self.stmtDC, 14, record.spec2_ddcfssp());
+        try self.bindBool(self.stmtDC, 15, record.spec2_ddcfdir());
+        try self.bindBool(self.stmtDC, 16, record.spec2_ddcfaun());
+        try self.bindBool(self.stmtDC, 17, record.spec2_ddcfavr());
+        try self.bindBool(self.stmtDC, 18, record.spec2_ddcfvol());
+        try self.bindBool(self.stmtDC, 19, record.spec2_ddcfcis());
+        try self.bindBool(self.stmtDC, 20, record.spec2_ddcfcif());
+        try self.bindBool(self.stmtDC, 21, record.spec2_ddcfcaf());
+        try self.bindBool(self.stmtDC, 22, record.spec3_ddcfxreg());
+        try self.bindBool(self.stmtDC, 23, record.spec3_ddcfxsys());
+        try self.bindBool(self.stmtDC, 24, record.spec3_ddcfimbd());
+        try self.bindBool(self.stmtDC, 25, record.spec3_ddcfrplc());
+        try self.bindBool(self.stmtDC, 26, record.spec3_ddcfcomp());
+        try self.bindBool(self.stmtDC, 27, record.spec3_ddcfmedi());
+        try self.bindBool(self.stmtDC, 28, record.spec3_ddcfrect());
+        try self.bindBool(self.stmtDC, 29, record.spec3_ddcfvea());
+        try self.bindBool(self.stmtDC, 30, record.spec4_ddcsprlf());
+        try self.bindBool(self.stmtDC, 31, record.spec4_ddcredus());
+        try self.bindBool(self.stmtDC, 32, record.spec4_ddcrabs());
+        try self.bindBool(self.stmtDC, 33, record.spec4_ddcfct());
+        try self.bindBool(self.stmtDC, 34, record.spec4_ddcblmt());
+        try self.bindBool(self.stmtDC, 35, record.spec4_ddccfs());
+        try self.bindBool(self.stmtDC, 36, record.spec4_ddcdvcs());
+        try self.bindBool(self.stmtDC, 37, record.spec4_ddcfscal());
+        try self.bindInt(self.stmtDC, 38, record.ddcrcorg);
+        try self.bindInt(self.stmtDC, 39, record.ddcrecfm);
+        try self.bindBool(self.stmtDC, 40, record.dsflg_ddcblk());
+        try self.bindBool(self.stmtDC, 41, record.dsflg_ddcstsp());
+        try self.bindInt(self.stmtDC, 42, record.ddccntl);
+        try self.bindInt(self.stmtDC, 43, record.ddcexpyr);
+        try self.bindInt(self.stmtDC, 44, record.ddcexpdy);
+        try self.bindInt(self.stmtDC, 45, record.ddcvolct);
+        try self.bindInt(self.stmtDC, 46, record.ddcdsnty);
+        try self.bindInt(self.stmtDC, 47, record.ddcsppri);
+        try self.bindInt(self.stmtDC, 48, record.ddcspsec);
+        try self.bindInt(self.stmtDC, 49, record.ddcdiblk);
+        try self.bindInt(self.stmtDC, 50, record.ddcavrec);
+        try self.bindInt(self.stmtDC, 51, record.ddcreduc);
+        try self.bindInt(self.stmtDC, 52, record.ddcrbias);
+        try self.bindInt(self.stmtDC, 53, record.ddcdvc);
+        try self.bindInt(self.stmtDC, 54, record.ddcaunit);
+        try self.bindInt(self.stmtDC, 55, record.ddclrecl);
+        try self.bindInt(self.stmtDC, 56, record.ddccisz);
+        try self.bindInt(self.stmtDC, 57, record.ddccipct);
+        try self.bindInt(self.stmtDC, 58, record.ddccapct);
+        try self.bindInt(self.stmtDC, 59, record.ddcxreg);
+        try self.bindInt(self.stmtDC, 60, record.ddcxsys);
+        try self.bindBool(self.stmtDC, 61, record.vindx_ddcimbed());
+        try self.bindBool(self.stmtDC, 62, record.vindx_ddcreplc());
+        try self.bindInt(self.stmtDC, 63, record.ddcklen);
+        try self.bindInt(self.stmtDC, 64, record.ddckoff);
+        try self.bindInt(self.stmtDC, 65, record.ddccamt);
+        try self.bindInt(self.stmtDC, 66, record.ddccomp);
+        try self.bindInt(self.stmtDC, 67, record.ddcmedia);
+        try self.bindInt(self.stmtDC, 68, record.ddcrecte);
+        try self.bindInt(self.stmtDC, 69, record.ddcbwotp);
+        try self.bindInt(self.stmtDC, 70, record.ddclogrc);
+        try self.bindInt(self.stmtDC, 71, record.ddcspand);
+        try self.bindInt(self.stmtDC, 72, record.ddcfrlog);
+        util.bcd2asc(record.ddclogid[0..record.ddclogln]);
+        try self.bindText(self.stmtDC, 73, record.ddclogid[0..record.ddclogln]);
+        try self.bindBool(self.stmtDC, 74, record.speca_ddcbwos());
+        try self.bindBool(self.stmtDC, 75, record.speca_ddclogrs());
+        try self.bindBool(self.stmtDC, 76, record.speca_ddcspans());
+        try self.bindBool(self.stmtDC, 77, record.speca_ddclsids());
+        try self.bindBool(self.stmtDC, 78, record.speca_ddcfrlgs());
+        try self.bindBool(self.stmtDC, 79, record.speca_ddcfextc());
+        try self.bindBool(self.stmtDC, 80, record.speca_ddcfa2gb());
+        try self.bindBool(self.stmtDC, 81, record.speca_ddcfpseg());
+        try self.bindBool(self.stmtDC, 82, record.specb_ddcfkyl1());
+        try self.bindBool(self.stmtDC, 83, record.specb_ddcfkyc1());
+        try self.bindBool(self.stmtDC, 84, record.specb_ddcfkyl2());
+        try self.bindBool(self.stmtDC, 85, record.specb_ddcfkyc2());
+        try self.bindBool(self.stmtDC, 86, record.specb_ddcfvsp());
+        try self.bindBool(self.stmtDC, 87, record.specb_ddcfsdb());
+        try self.bindBool(self.stmtDC, 88, record.specb_ddcfovrd());
+        try self.bindBool(self.stmtDC, 89, record.specb_ddcfcar());
+        try self.bindBool(self.stmtDC, 90, record.specc_ddcfattr());
+        try self.bindBool(self.stmtDC, 91, record.specc_ddcflogr());
+        try self.bindBool(self.stmtDC, 92, record.specc_ddcfrmod());
+        try self.bindBool(self.stmtDC, 93, record.specc_ddcgsrdu());
+        try self.bindBool(self.stmtDC, 94, record.specc_ddcfklbl());
+        try self.bindBool(self.stmtDC, 95, record.sflg_ddcovrd());
+        try self.bindBool(self.stmtDC, 96, record.sflg_ddcsdb());
+        try self.bindBool(self.stmtDC, 97, record.vbyt1_ddcreuse());
+        try self.bindBool(self.stmtDC, 98, record.vbyt1_ddcspeed());
+        try self.bindBool(self.stmtDC, 99, record.vbyt1_ddcex255());
+        try self.bindBool(self.stmtDC, 100, record.vbyt1_ddclogrp());
+        try self.bindInt(self.stmtDC, 101, record.ddceattr);
+        try self.bindInt(self.stmtDC, 102, record.ddcct);
+        try self.bindInt(self.stmtDC, 103, record.ddcdscf);
+        try self.bindBool(self.stmtDC, 104, record.rbyte_ddca2gb());
+        try self.bindBool(self.stmtDC, 105, record.rbyte_ddcreclm());
+        try self.bindInt64(self.stmtDC, 106, record.ddcbszlm);
+        try self.bindInt(self.stmtDC, 107, record.ddcpsca);
+        try self.bindInt(self.stmtDC, 108, record.ddcpseg);
+        try self.bindBool(self.stmtDC, 109, record.vsp_ddcvspuk());
+        try self.bindBool(self.stmtDC, 110, record.vsp_ddcvspum());
+        try self.bindInt64(self.stmtDC, 111, util.b3toInt(record.ddcvspv));
+        util.bcd2asc(&record.ddcklbn1);
+        try self.bindText(self.stmtDC, 112, &record.ddcklbn1);
+        try self.bindInt(self.stmtDC, 113, record.ddckycd1);
+        util.bcd2asc(&record.ddcklbn2);
+        try self.bindText(self.stmtDC, 114, &record.ddcklbn2);
+        try self.bindInt(self.stmtDC, 115, record.ddckycd2);
+        try self.bindInt(self.stmtDC, 116, record.ddcrmode);
+        util.bcd2asc(&record.ddcdklbn);
+        try self.bindText(self.stmtDC, 117, &record.ddcdklbn);
     }
 
     fn bindText(self: *Database, stmt: *c.sqlite3_stmt, index: c_int, text: []const u8) !void {

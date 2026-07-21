@@ -6,6 +6,7 @@ const Header = records.Header;
 const RecordD = @import("recordD.zig").RecordD;
 const RecordA = @import("recordA.zig").RecordA;
 const RecordV = @import("recordV.zig").RecordV;
+const RecordDC = @import("recordDC.zig").RecordDC;
 const Database = @import("db.zig").Database;
 
 const Context = struct {
@@ -130,9 +131,15 @@ const FileParser = struct {
         var read_buffer: [4096]u8 = undefined;
         var reader = file.reader(io, &read_buffer);
 
+        std.log.debug("RecordD size: {d}\n", .{@sizeOf(RecordD)});
+        std.log.debug("RecordA size: {d}\n", .{@sizeOf(RecordA)});
+        std.log.debug("RecordV size: {d}\n", .{@sizeOf(RecordV)});
+        std.log.debug("RecordDC size: {d}\n", .{@sizeOf(RecordDC)});
+
         var countD: usize = 0;
         var countA: usize = 0;
         var countV: usize = 0;
+        var countDC: usize = 0;
         while (true) {
             const header = reader.interface.peekStruct(Header, .big) catch |err| {
                 if (err == error.EndOfStream) {
@@ -141,6 +148,7 @@ const FileParser = struct {
                     return err;
                 }
             };
+
             var rec_type = header.dcurctyp;
             util.bcd2asc(&rec_type);
             const int_type: u16 = @bitCast(rec_type);
@@ -182,6 +190,18 @@ const FileParser = struct {
                     // _ = &record_v; // Currently not processing RecordV, but we can add processing logic here if needed
                     try self.ctx.db.processRecordV(&record_v);
                 },
+                util.asUint(u16, "DC") => {
+                    var record_dc = reader.interface.takeStruct(RecordDC, .big) catch |err| {
+                        if (err == error.EndOfStream) {
+                            break;
+                        } else {
+                            return err;
+                        }
+                    };
+                    countDC += 1;
+                    // _ = &record_dc; // Currently not processing RecordDC, but we can add processing logic here if needed
+                    try self.ctx.db.processRecordDC(&record_dc);
+                },
                 else => {
                     _ = reader.interface.take(header.dculeng) catch |err| {
                         if (err == error.EndOfStream) {
@@ -202,6 +222,8 @@ const FileParser = struct {
         try self.ctx.print("| A     |  {d:>10} |\n", .{countA});
         try self.ctx.print("+---------------------+\n", .{});
         try self.ctx.print("| V     |  {d:>10} |\n", .{countV});
+        try self.ctx.print("+---------------------+\n", .{});
+        try self.ctx.print("| DC    |  {d:>10} |\n", .{countDC});
         try self.ctx.print("+---------------------+\n", .{});
     }
 };
