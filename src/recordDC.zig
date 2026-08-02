@@ -1,4 +1,9 @@
-const Header = @import("records.zig").Header;
+const std = @import("std");
+const util = @import("util.zig");
+const common = @import("common.zig");
+const Context = common.Context;
+const Database = common.Database;
+const Header = common.Header;
 
 pub const RecordDC = extern struct {
     header: Header,
@@ -36,7 +41,7 @@ pub const RecordDC = extern struct {
     ddccapct: i16,
     ddcxreg: u8,
     ddcxsys: u8,
-    ddcvindx: u8,
+    ddcvindx: [1]u8,
     ddcklen: u8,
     ddckoff: i16,
     ddccamt: u8,
@@ -51,23 +56,23 @@ pub const RecordDC = extern struct {
     ddcfrlog: u8,
     ddclogln: u16,
     ddclogid: [26]u8,
-    ddcspeca: u8,
-    ddcspecb: u8,
-    ddcspecc: u8,
-    ddcspecd: u8,
-    ddcsflg: u8,
-    ddcvbyt1: u8,
+    ddcspeca: [1]u8,
+    ddcspecb: [1]u8,
+    ddcspecc: [1]u8,
+    ddcspecd: [1]u8,
+    ddcsflg: [1]u8,
+    ddcvbyt1: [1]u8,
     _res4: [3]u8,
     ddceattr: u8,
     ddcct: u8,
     ddcdscf: u8,
-    ddcrbyte: u8,
+    ddcrbyte: [1]u8,
     _res5: [4]u8,
     ddcbszlm: u32 align(1),
     ddcpsca: u8,
     ddcpseg: u8,
     _res6: [5]u8,
-    ddcvsp: u8,
+    ddcvsp: [1]u8,
     ddcvspv: [3]u8, //TODO convert to u32
     ddcklbl1: u16,
     ddcklbn1: [64]u8,
@@ -242,14 +247,14 @@ pub const RecordDC = extern struct {
         \\     ddcredus,
         \\     ddcrabs,
         \\     ddcfct,
-        \\     ddcblmt, 
+        \\     ddcblmt,
         \\     ddccfs,
-        \\     ddcdvcs, 
+        \\     ddcdvcs,
         \\     ddcfscal,
         \\     ddcrcorg,
         \\     ddcrecfm,
         \\     ddcblk,
-        \\     ddcstsp, 
+        \\     ddcstsp,
         \\     ddccntl,
         \\     ddcexpyr,
         \\     ddcexpdy,
@@ -332,271 +337,221 @@ pub const RecordDC = extern struct {
         \\
     ;
 
-    pub fn spec1_ddcfrorg(self: *RecordDC) bool {
-        return self.ddcspec1[0] & 0x80 != 0;
-    }
-
-    pub fn spec1_ddcflrec(self: *RecordDC) bool {
-        return self.ddcspec1[0] & 0x40 != 0;
-    }
-
-    pub fn spec1_ddcfrfm(self: *RecordDC) bool {
-        return self.ddcspec1[0] & 0x20 != 0;
-    }
-
-    pub fn spec1_ddcfklen(self: *RecordDC) bool {
-        return self.ddcspec1[0] & 0x10 != 0;
-    }
-
-    pub fn spec1_ddcfkoff(self: *RecordDC) bool {
-        return self.ddcspec1[0] & 0x08 != 0;
-    }
-
-    pub fn spec1_ddcfexp(self: *RecordDC) bool {
-        return self.ddcspec1[0] & 0x04 != 0;
-    }
-
-    pub fn spec1_ddcfret(self: *RecordDC) bool {
-        return self.ddcspec1[0] & 0x02 != 0;
-    }
-
-    pub fn spec1_ddcfpsp(self: *RecordDC) bool {
-        return self.ddcspec1[0] & 0x01 != 0;
-    }
-
-    pub fn spec2_ddcfssp(self: *RecordDC) bool {
-        return self.ddcspec2[0] & 0x80 != 0;
-    }
-
-    pub fn spec2_ddcfdir(self: *RecordDC) bool {
-        return self.ddcspec2[0] & 0x40 != 0;
-    }
-
-    pub fn spec2_ddcfaun(self: *RecordDC) bool {
-        return self.ddcspec2[0] & 0x20 != 0;
-    }
-
-    pub fn spec2_ddcfavr(self: *RecordDC) bool {
-        return self.ddcspec2[0] & 0x10 != 0;
-    }
-
-    pub fn spec2_ddcfvol(self: *RecordDC) bool {
-        return self.ddcspec2[0] & 0x08 != 0;
-    }
-
-    pub fn spec2_ddcfcis(self: *RecordDC) bool {
-        return self.ddcspec2[0] & 0x04 != 0;
-    }
-
-    pub fn spec2_ddcfcif(self: *RecordDC) bool {
-        return self.ddcspec2[0] & 0x02 != 0;
-    }
-
-    pub fn spec2_ddcfcaf(self: *RecordDC) bool {
-        return self.ddcspec2[0] & 0x01 != 0;
-    }
-
-    pub fn spec3_ddcfxreg(self: *RecordDC) bool {
-        return self.ddcspec3[0] & 0x80 != 0;
-    }
-
-    pub fn spec3_ddcfxsys(self: *RecordDC) bool {
-        return self.ddcspec3[0] & 0x40 != 0;
-    }
-
-    pub fn spec3_ddcfimbd(self: *RecordDC) bool {
-        return self.ddcspec3[0] & 0x20 != 0;
-    }
-
-    pub fn spec3_ddcfrplc(self: *RecordDC) bool {
-        return self.ddcspec3[0] & 0x10 != 0;
-    }
-
-    pub fn spec3_ddcfcomp(self: *RecordDC) bool {
-        return self.ddcspec3[0] & 0x08 != 0;
-    }
-
-    pub fn spec3_ddcfmedi(self: *RecordDC) bool {
-        return self.ddcspec3[0] & 0x04 != 0;
-    }
-
-    pub fn spec3_ddcfrect(self: *RecordDC) bool {
-        return self.ddcspec3[0] & 0x02 != 0;
-    }
-
-    pub fn spec3_ddcfvea(self: *RecordDC) bool {
-        return self.ddcspec3[0] & 0x01 != 0;
-    }
-
-    pub fn spec4_ddcsprlf(self: *RecordDC) bool {
-        return self.ddcspec4[0] & 0x80 != 0;
-    }
-
-    pub fn spec4_ddcredus(self: *RecordDC) bool {
-        return self.ddcspec4[0] & 0x40 != 0;
-    }
-
-    pub fn spec4_ddcrabs(self: *RecordDC) bool {
-        return self.ddcspec4[0] & 0x20 != 0;
-    }
-
-    pub fn spec4_ddcfct(self: *RecordDC) bool {
-        return self.ddcspec4[0] & 0x10 != 0;
-    }
-
-    pub fn spec4_ddcblmt(self: *RecordDC) bool {
-        return self.ddcspec4[0] & 0x08 != 0;
-    }
-
-    pub fn spec4_ddccfs(self: *RecordDC) bool {
-        return self.ddcspec4[0] & 0x04 != 0;
-    }
-
-    pub fn spec4_ddcdvcs(self: *RecordDC) bool {
-        return self.ddcspec4[0] & 0x02 != 0;
-    }
-
-    pub fn spec4_ddcfscal(self: *RecordDC) bool {
-        return self.ddcspec4[0] & 0x01 != 0;
-    }
-
-    pub fn dsflg_ddcblk(self: *RecordDC) bool {
-        return self.ddcdsflg[0] & 0x80 != 0;
-    }
-
-    pub fn dsflg_ddcstsp(self: *RecordDC) bool {
-        return self.ddcdsflg[0] & 0x40 != 0;
-    }
-
-    pub fn vindx_ddcimbed(self: *RecordDC) bool {
-        return self.ddcvindx & 0x80 != 0;
-    }
-
-    pub fn vindx_ddcreplc(self: *RecordDC) bool {
-        return self.ddcvindx & 0x40 != 0;
-    }
-
-    pub fn speca_ddcbwos(self: *RecordDC) bool {
-        return self.ddcspeca & 0x80 != 0;
-    }
-
-    pub fn speca_ddclogrs(self: *RecordDC) bool {
-        return self.ddcspeca & 0x40 != 0;
-    }
-
-    pub fn speca_ddcspans(self: *RecordDC) bool {
-        return self.ddcspeca & 0x20 != 0;
-    }
-
-    pub fn speca_ddclsids(self: *RecordDC) bool {
-        return self.ddcspeca & 0x10 != 0;
-    }
-
-    pub fn speca_ddcfrlgs(self: *RecordDC) bool {
-        return self.ddcspeca & 0x08 != 0;
-    }
-
-    pub fn speca_ddcfextc(self: *RecordDC) bool {
-        return self.ddcspeca & 0x04 != 0;
-    }
-
-    pub fn speca_ddcfa2gb(self: *RecordDC) bool {
-        return self.ddcspeca & 0x02 != 0;
-    }
-
-    pub fn speca_ddcfpseg(self: *RecordDC) bool {
-        return self.ddcspeca & 0x01 != 0;
-    }
-
-    pub fn specb_ddcfkyl1(self: *RecordDC) bool {
-        return self.ddcspecb & 0x80 != 0;
-    }
-
-    pub fn specb_ddcfkyc1(self: *RecordDC) bool {
-        return self.ddcspecb & 0x40 != 0;
-    }
-
-    pub fn specb_ddcfkyl2(self: *RecordDC) bool {
-        return self.ddcspecb & 0x20 != 0;
-    }
-
-    pub fn specb_ddcfkyc2(self: *RecordDC) bool {
-        return self.ddcspecb & 0x10 != 0;
-    }
-
-    pub fn specb_ddcfvsp(self: *RecordDC) bool {
-        return self.ddcspecb & 0x08 != 0;
-    }
-
-    pub fn specb_ddcfsdb(self: *RecordDC) bool {
-        return self.ddcspecb & 0x04 != 0;
-    }
-
-    pub fn specb_ddcfovrd(self: *RecordDC) bool {
-        return self.ddcspecb & 0x02 != 0;
-    }
-
-    pub fn specb_ddcfcar(self: *RecordDC) bool {
-        return self.ddcspecb & 0x01 != 0;
-    }
-
-    pub fn specc_ddcfattr(self: *RecordDC) bool {
-        return self.ddcspecc & 0x80 != 0;
-    }
-
-    pub fn specc_ddcflogr(self: *RecordDC) bool {
-        return self.ddcspecc & 0x40 != 0;
-    }
-
-    pub fn specc_ddcfrmod(self: *RecordDC) bool {
-        return self.ddcspecc & 0x20 != 0;
-    }
-
-    pub fn specc_ddcgsrdu(self: *RecordDC) bool {
-        return self.ddcspecc & 0x10 != 0;
-    }
-
-    pub fn specc_ddcfklbl(self: *RecordDC) bool {
-        return self.ddcspecc & 0x08 != 0;
-    }
-
-    pub fn sflg_ddcovrd(self: *RecordDC) bool {
-        return self.ddcsflg & 0x80 != 0;
-    }
-
-    pub fn sflg_ddcsdb(self: *RecordDC) bool {
-        return self.ddcsflg & 0x40 != 0;
-    }
-
-    pub fn vbyt1_ddcreuse(self: *RecordDC) bool {
-        return self.ddcvbyt1 & 0x80 != 0;
-    }
-
-    pub fn vbyt1_ddcspeed(self: *RecordDC) bool {
-        return self.ddcvbyt1 & 0x40 != 0;
-    }
-
-    pub fn vbyt1_ddcex255(self: *RecordDC) bool {
-        return self.ddcvbyt1 & 0x20 != 0;
-    }
-
-    pub fn vbyt1_ddclogrp(self: *RecordDC) bool {
-        return self.ddcvbyt1 & 0x10 != 0;
-    }
-
-    pub fn rbyte_ddca2gb(self: *RecordDC) bool {
-        return self.ddcrbyte & 0x80 != 0;
-    }
-
-    pub fn rbyte_ddcreclm(self: *RecordDC) bool {
-        return self.ddcrbyte & 0x40 != 0;
-    }
-
-    pub fn vsp_ddcvspuk(self: *RecordDC) bool {
-        return self.ddcvsp & 0x80 != 0;
-    }
-
-    pub fn vsp_ddcvspum(self: *RecordDC) bool {
-        return self.ddcvsp & 0x40 != 0;
+    pub const spec1_ddcfrorg = util.bitFlag(RecordDC, "ddcspec1", 0x80);
+    pub const spec1_ddcflrec = util.bitFlag(RecordDC, "ddcspec1", 0x40);
+    pub const spec1_ddcfrfm = util.bitFlag(RecordDC, "ddcspec1", 0x20);
+    pub const spec1_ddcfklen = util.bitFlag(RecordDC, "ddcspec1", 0x10);
+    pub const spec1_ddcfkoff = util.bitFlag(RecordDC, "ddcspec1", 0x08);
+    pub const spec1_ddcfexp = util.bitFlag(RecordDC, "ddcspec1", 0x04);
+    pub const spec1_ddcfret = util.bitFlag(RecordDC, "ddcspec1", 0x02);
+    pub const spec1_ddcfpsp = util.bitFlag(RecordDC, "ddcspec1", 0x01);
+
+    pub const spec2_ddcfssp = util.bitFlag(RecordDC, "ddcspec2", 0x80);
+    pub const spec2_ddcfdir = util.bitFlag(RecordDC, "ddcspec2", 0x40);
+    pub const spec2_ddcfaun = util.bitFlag(RecordDC, "ddcspec2", 0x20);
+    pub const spec2_ddcfavr = util.bitFlag(RecordDC, "ddcspec2", 0x10);
+    pub const spec2_ddcfvol = util.bitFlag(RecordDC, "ddcspec2", 0x08);
+    pub const spec2_ddcfcis = util.bitFlag(RecordDC, "ddcspec2", 0x04);
+    pub const spec2_ddcfcif = util.bitFlag(RecordDC, "ddcspec2", 0x02);
+    pub const spec2_ddcfcaf = util.bitFlag(RecordDC, "ddcspec2", 0x01);
+
+    pub const spec3_ddcfxreg = util.bitFlag(RecordDC, "ddcspec3", 0x80);
+    pub const spec3_ddcfxsys = util.bitFlag(RecordDC, "ddcspec3", 0x40);
+    pub const spec3_ddcfimbd = util.bitFlag(RecordDC, "ddcspec3", 0x20);
+    pub const spec3_ddcfrplc = util.bitFlag(RecordDC, "ddcspec3", 0x10);
+    pub const spec3_ddcfcomp = util.bitFlag(RecordDC, "ddcspec3", 0x08);
+    pub const spec3_ddcfmedi = util.bitFlag(RecordDC, "ddcspec3", 0x04);
+    pub const spec3_ddcfrect = util.bitFlag(RecordDC, "ddcspec3", 0x02);
+    pub const spec3_ddcfvea = util.bitFlag(RecordDC, "ddcspec3", 0x01);
+
+    pub const spec4_ddcsprlf = util.bitFlag(RecordDC, "ddcspec4", 0x80);
+    pub const spec4_ddcredus = util.bitFlag(RecordDC, "ddcspec4", 0x40);
+    pub const spec4_ddcrabs = util.bitFlag(RecordDC, "ddcspec4", 0x20);
+    pub const spec4_ddcfct = util.bitFlag(RecordDC, "ddcspec4", 0x10);
+    pub const spec4_ddcblmt = util.bitFlag(RecordDC, "ddcspec4", 0x08);
+    pub const spec4_ddccfs = util.bitFlag(RecordDC, "ddcspec4", 0x04);
+    pub const spec4_ddcdvcs = util.bitFlag(RecordDC, "ddcspec4", 0x02);
+    pub const spec4_ddcfscal = util.bitFlag(RecordDC, "ddcspec4", 0x01);
+
+    pub const dsflg_ddcblk = util.bitFlag(RecordDC, "ddcdsflg", 0x80);
+    pub const dsflg_ddcstsp = util.bitFlag(RecordDC, "ddcdsflg", 0x40);
+
+    pub const vindx_ddcimbed = util.bitFlag(RecordDC, "ddcvindx", 0x80);
+    pub const vindx_ddcreplc = util.bitFlag(RecordDC, "ddcvindx", 0x40);
+
+    pub const speca_ddcbwos = util.bitFlag(RecordDC, "ddcspeca", 0x80);
+    pub const speca_ddclogrs = util.bitFlag(RecordDC, "ddcspeca", 0x40);
+    pub const speca_ddcspans = util.bitFlag(RecordDC, "ddcspeca", 0x20);
+    pub const speca_ddclsids = util.bitFlag(RecordDC, "ddcspeca", 0x10);
+    pub const speca_ddcfrlgs = util.bitFlag(RecordDC, "ddcspeca", 0x08);
+    pub const speca_ddcfextc = util.bitFlag(RecordDC, "ddcspeca", 0x04);
+    pub const speca_ddcfa2gb = util.bitFlag(RecordDC, "ddcspeca", 0x02);
+    pub const speca_ddcfpseg = util.bitFlag(RecordDC, "ddcspeca", 0x01);
+
+    pub const specb_ddcfkyl1 = util.bitFlag(RecordDC, "ddcspecb", 0x80);
+    pub const specb_ddcfkyc1 = util.bitFlag(RecordDC, "ddcspecb", 0x40);
+    pub const specb_ddcfkyl2 = util.bitFlag(RecordDC, "ddcspecb", 0x20);
+    pub const specb_ddcfkyc2 = util.bitFlag(RecordDC, "ddcspecb", 0x10);
+    pub const specb_ddcfvsp = util.bitFlag(RecordDC, "ddcspecb", 0x08);
+    pub const specb_ddcfsdb = util.bitFlag(RecordDC, "ddcspecb", 0x04);
+    pub const specb_ddcfovrd = util.bitFlag(RecordDC, "ddcspecb", 0x02);
+    pub const specb_ddcfcar = util.bitFlag(RecordDC, "ddcspecb", 0x01);
+
+    pub const specc_ddcfattr = util.bitFlag(RecordDC, "ddcspecc", 0x80);
+    pub const specc_ddcflogr = util.bitFlag(RecordDC, "ddcspecc", 0x40);
+    pub const specc_ddcfrmod = util.bitFlag(RecordDC, "ddcspecc", 0x20);
+    pub const specc_ddcgsrdu = util.bitFlag(RecordDC, "ddcspecc", 0x10);
+    pub const specc_ddcfklbl = util.bitFlag(RecordDC, "ddcspecc", 0x08);
+
+    pub const sflg_ddcovrd = util.bitFlag(RecordDC, "ddcsflg", 0x80);
+    pub const sflg_ddcsdb = util.bitFlag(RecordDC, "ddcsflg", 0x40);
+
+    pub const vbyt1_ddcreuse = util.bitFlag(RecordDC, "ddcvbyt1", 0x80);
+    pub const vbyt1_ddcspeed = util.bitFlag(RecordDC, "ddcvbyt1", 0x40);
+    pub const vbyt1_ddcex255 = util.bitFlag(RecordDC, "ddcvbyt1", 0x20);
+    pub const vbyt1_ddclogrp = util.bitFlag(RecordDC, "ddcvbyt1", 0x10);
+
+    pub const rbyte_ddca2gb = util.bitFlag(RecordDC, "ddcrbyte", 0x80);
+    pub const rbyte_ddcreclm = util.bitFlag(RecordDC, "ddcrbyte", 0x40);
+
+    pub const vsp_ddcvspuk = util.bitFlag(RecordDC, "ddcvsp", 0x80);
+    pub const vsp_ddcvspum = util.bitFlag(RecordDC, "ddcvsp", 0x40);
+
+    pub inline fn bind(self: *RecordDC, db: *Database, stmt: common.Stmt) !void {
+        util.bcd2asc(self.ddcname[0..self.ddcnmlen]);
+        try db.bindText(stmt, 1, self.ddcname[0..self.ddcnmlen]);
+        util.bcd2asc(&self.ddcuser);
+        try db.bindText(stmt, 2, &self.ddcuser);
+        util.bcd2asc(&self.ddcdate);
+        try db.bindText(stmt, 3, &self.ddcdate);
+        util.bcd2asc(&self.ddctime);
+        try db.bindText(stmt, 4, &self.ddctime);
+        util.bcd2asc(&self.ddcdesc);
+        try db.bindText(stmt, 5, &self.ddcdesc);
+        try db.bindBool(stmt, 6, self.spec1_ddcfrorg());
+        try db.bindBool(stmt, 7, self.spec1_ddcflrec());
+        try db.bindBool(stmt, 8, self.spec1_ddcfrfm());
+        try db.bindBool(stmt, 9, self.spec1_ddcfklen());
+        try db.bindBool(stmt, 10, self.spec1_ddcfkoff());
+        try db.bindBool(stmt, 11, self.spec1_ddcfexp());
+        try db.bindBool(stmt, 12, self.spec1_ddcfret());
+        try db.bindBool(stmt, 13, self.spec1_ddcfpsp());
+        try db.bindBool(stmt, 14, self.spec2_ddcfssp());
+        try db.bindBool(stmt, 15, self.spec2_ddcfdir());
+        try db.bindBool(stmt, 16, self.spec2_ddcfaun());
+        try db.bindBool(stmt, 17, self.spec2_ddcfavr());
+        try db.bindBool(stmt, 18, self.spec2_ddcfvol());
+        try db.bindBool(stmt, 19, self.spec2_ddcfcis());
+        try db.bindBool(stmt, 20, self.spec2_ddcfcif());
+        try db.bindBool(stmt, 21, self.spec2_ddcfcaf());
+        try db.bindBool(stmt, 22, self.spec3_ddcfxreg());
+        try db.bindBool(stmt, 23, self.spec3_ddcfxsys());
+        try db.bindBool(stmt, 24, self.spec3_ddcfimbd());
+        try db.bindBool(stmt, 25, self.spec3_ddcfrplc());
+        try db.bindBool(stmt, 26, self.spec3_ddcfcomp());
+        try db.bindBool(stmt, 27, self.spec3_ddcfmedi());
+        try db.bindBool(stmt, 28, self.spec3_ddcfrect());
+        try db.bindBool(stmt, 29, self.spec3_ddcfvea());
+        try db.bindBool(stmt, 30, self.spec4_ddcsprlf());
+        try db.bindBool(stmt, 31, self.spec4_ddcredus());
+        try db.bindBool(stmt, 32, self.spec4_ddcrabs());
+        try db.bindBool(stmt, 33, self.spec4_ddcfct());
+        try db.bindBool(stmt, 34, self.spec4_ddcblmt());
+        try db.bindBool(stmt, 35, self.spec4_ddccfs());
+        try db.bindBool(stmt, 36, self.spec4_ddcdvcs());
+        try db.bindBool(stmt, 37, self.spec4_ddcfscal());
+        try db.bindInt(stmt, 38, self.ddcrcorg);
+        try db.bindInt(stmt, 39, self.ddcrecfm);
+        try db.bindBool(stmt, 40, self.dsflg_ddcblk());
+        try db.bindBool(stmt, 41, self.dsflg_ddcstsp());
+        try db.bindInt(stmt, 42, self.ddccntl);
+        try db.bindInt(stmt, 43, self.ddcexpyr);
+        try db.bindInt(stmt, 44, self.ddcexpdy);
+        try db.bindInt(stmt, 45, self.ddcvolct);
+        try db.bindInt(stmt, 46, self.ddcdsnty);
+        try db.bindInt(stmt, 47, self.ddcsppri);
+        try db.bindInt(stmt, 48, self.ddcspsec);
+        try db.bindInt(stmt, 49, self.ddcdiblk);
+        try db.bindInt(stmt, 50, self.ddcavrec);
+        try db.bindInt(stmt, 51, self.ddcreduc);
+        try db.bindInt(stmt, 52, self.ddcrbias);
+        try db.bindInt(stmt, 53, self.ddcdvc);
+        try db.bindInt(stmt, 54, self.ddcaunit);
+        try db.bindInt(stmt, 55, self.ddclrecl);
+        try db.bindInt(stmt, 56, self.ddccisz);
+        try db.bindInt(stmt, 57, self.ddccipct);
+        try db.bindInt(stmt, 58, self.ddccapct);
+        try db.bindInt(stmt, 59, self.ddcxreg);
+        try db.bindInt(stmt, 60, self.ddcxsys);
+        try db.bindBool(stmt, 61, self.vindx_ddcimbed());
+        try db.bindBool(stmt, 62, self.vindx_ddcreplc());
+        try db.bindInt(stmt, 63, self.ddcklen);
+        try db.bindInt(stmt, 64, self.ddckoff);
+        try db.bindInt(stmt, 65, self.ddccamt);
+        try db.bindInt(stmt, 66, self.ddccomp);
+        try db.bindInt(stmt, 67, self.ddcmedia);
+        try db.bindInt(stmt, 68, self.ddcrecte);
+        try db.bindInt(stmt, 69, self.ddcbwotp);
+        try db.bindInt(stmt, 70, self.ddclogrc);
+        try db.bindInt(stmt, 71, self.ddcspand);
+        try db.bindInt(stmt, 72, self.ddcfrlog);
+        util.bcd2asc(self.ddclogid[0..self.ddclogln]);
+        try db.bindText(stmt, 73, self.ddclogid[0..self.ddclogln]);
+        try db.bindBool(stmt, 74, self.speca_ddcbwos());
+        try db.bindBool(stmt, 75, self.speca_ddclogrs());
+        try db.bindBool(stmt, 76, self.speca_ddcspans());
+        try db.bindBool(stmt, 77, self.speca_ddclsids());
+        try db.bindBool(stmt, 78, self.speca_ddcfrlgs());
+        try db.bindBool(stmt, 79, self.speca_ddcfextc());
+        try db.bindBool(stmt, 80, self.speca_ddcfa2gb());
+        try db.bindBool(stmt, 81, self.speca_ddcfpseg());
+        try db.bindBool(stmt, 82, self.specb_ddcfkyl1());
+        try db.bindBool(stmt, 83, self.specb_ddcfkyc1());
+        try db.bindBool(stmt, 84, self.specb_ddcfkyl2());
+        try db.bindBool(stmt, 85, self.specb_ddcfkyc2());
+        try db.bindBool(stmt, 86, self.specb_ddcfvsp());
+        try db.bindBool(stmt, 87, self.specb_ddcfsdb());
+        try db.bindBool(stmt, 88, self.specb_ddcfovrd());
+        try db.bindBool(stmt, 89, self.specb_ddcfcar());
+        try db.bindBool(stmt, 90, self.specc_ddcfattr());
+        try db.bindBool(stmt, 91, self.specc_ddcflogr());
+        try db.bindBool(stmt, 92, self.specc_ddcfrmod());
+        try db.bindBool(stmt, 93, self.specc_ddcgsrdu());
+        try db.bindBool(stmt, 94, self.specc_ddcfklbl());
+        try db.bindBool(stmt, 95, self.sflg_ddcovrd());
+        try db.bindBool(stmt, 96, self.sflg_ddcsdb());
+        try db.bindBool(stmt, 97, self.vbyt1_ddcreuse());
+        try db.bindBool(stmt, 98, self.vbyt1_ddcspeed());
+        try db.bindBool(stmt, 99, self.vbyt1_ddcex255());
+        try db.bindBool(stmt, 100, self.vbyt1_ddclogrp());
+        try db.bindInt(stmt, 101, self.ddceattr);
+        try db.bindInt(stmt, 102, self.ddcct);
+        try db.bindInt(stmt, 103, self.ddcdscf);
+        try db.bindBool(stmt, 104, self.rbyte_ddca2gb());
+        try db.bindBool(stmt, 105, self.rbyte_ddcreclm());
+        try db.bindInt64(stmt, 106, self.ddcbszlm);
+        try db.bindInt(stmt, 107, self.ddcpsca);
+        try db.bindInt(stmt, 108, self.ddcpseg);
+        try db.bindBool(stmt, 109, self.vsp_ddcvspuk());
+        try db.bindBool(stmt, 110, self.vsp_ddcvspum());
+        try db.bindInt64(stmt, 111, util.b3toInt(self.ddcvspv));
+        util.bcd2asc(&self.ddcklbn1);
+        try db.bindText(stmt, 112, &self.ddcklbn1);
+        try db.bindInt(stmt, 113, self.ddckycd1);
+        util.bcd2asc(&self.ddcklbn2);
+        try db.bindText(stmt, 114, &self.ddcklbn2);
+        try db.bindInt(stmt, 115, self.ddckycd2);
+        try db.bindInt(stmt, 116, self.ddcrmode);
+        util.bcd2asc(&self.ddcdklbn);
+        try db.bindText(stmt, 117, &self.ddcdklbn);
     }
 };
+
+pub const Record = RecordDC;
+pub const record_key = "DC";
+pub const process = common.genericProcess(@This());
+
+test "record size" {
+    std.debug.print("RecordDC size: {d}\n", .{@sizeOf(RecordDC)});
+    try std.testing.expect(@sizeOf(RecordDC) == 564);
+}

@@ -231,3 +231,55 @@ test "b3toInt" {
     const value = b3toInt(b3);
     try std.testing.expectEqual(32, value);
 }
+
+pub fn commaInt(buf: []u8, value: usize) []const u8 {
+    if (value == 0) {
+        buf[0] = '0';
+        return buf[0..1];
+    }
+
+    // Build the string in reverse order in a temporary buffer
+    var temp: [32]u8 = undefined;
+    var temp_len: usize = 0;
+    var n = value;
+    var digits: usize = 0;
+
+    while (n > 0) {
+        if (digits > 0 and digits % 3 == 0) {
+            temp[temp_len] = ',';
+            temp_len += 1;
+        }
+        temp[temp_len] = @intCast('0' + (n % 10));
+        temp_len += 1;
+        digits += 1;
+        n /= 10;
+    }
+
+    // Reverse into the output buffer
+    var out: usize = 0;
+    var i: usize = temp_len;
+    while (i > 0) {
+        i -= 1;
+        buf[out] = temp[i];
+        out += 1;
+    }
+
+    return buf[0..out];
+}
+
+test "commaInt" {
+    var buffer: [32]u8 = undefined;
+    try std.testing.expectEqualStrings("0", commaInt(&buffer, 0));
+    try std.testing.expectEqualStrings("758", commaInt(&buffer, 758));
+    try std.testing.expectEqualStrings("1,234", commaInt(&buffer, 1_234));
+    try std.testing.expectEqualStrings("9,999,999,999", commaInt(&buffer, 9_999_999_999));
+    try std.testing.expectEqualStrings("18,446,744,073,709,551,615", commaInt(&buffer, 18_446_744_073_709_551_615));
+}
+
+pub fn bitFlag(comptime Self: type, comptime field: []const u8, comptime mask: u8) fn (*Self) bool {
+    return struct {
+        fn f(self: *Self) bool {
+            return @field(self, field)[0] & mask != 0;
+        }
+    }.f;
+}

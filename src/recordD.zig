@@ -1,4 +1,9 @@
-const Header = @import("records.zig").Header;
+const std = @import("std");
+const util = @import("util.zig");
+const common = @import("common.zig");
+const Context = common.Context;
+const Database = common.Database;
+const Header = common.Header;
 
 pub const RecordD = extern struct {
     header: Header,
@@ -8,7 +13,8 @@ pub const RecordD = extern struct {
     dcdflag2: [1]u8,
     dcdflag3: [1]u8,
     _res1: [2]u8,
-    dcddsorg: [2]u8,
+    dcddsorg1: [1]u8,
+    dcddsorg2: [1]u8,
     dcdrecrd: [1]u8,
     dcdnmext: u8,
     dcdvolsr: [6]u8,
@@ -145,260 +151,283 @@ pub const RecordD = extern struct {
 
     pub const insertSQL =
         \\ INSERT INTO record_d (
-        \\     dcddsnam, 
-        \\     dcdemngd, 
-        \\     dcdedvvr, 
-        \\     dcdnospc, 
-        \\     dcdvsami, 
-        \\     dcdnofm1, 
-        \\     dcdracfd, 
-        \\     dcdsmsm, 
-        \\     dcdtemp, 
-        \\     dcdpdse, 
-        \\     dcdgds, 
-        \\     dcdreblk, 
-        \\     dcdchind, 
-        \\     dcdckdsi, 
-        \\     dcdnovvr, 
-        \\     dcdintcg, 
-        \\     dcdinicf, 
-        \\     dcdallfg, 
-        \\     dcdusefg, 
-        \\     dcdsecfg, 
-        \\     dcdnmbfg, 
-        \\     dcdpdsex, 
-        \\     dcdstrp, 
-        \\     dcdddmex, 
-        \\     dcdcpoit, 
-        \\     dcdgt64k, 
-        \\     dcdcmptv, 
-        \\     dcddsgis, 
-        \\     dcddsgps, 
-        \\     dcddsgda, 
-        \\     dcddsgpo, 
-        \\     dcddsgu, 
-        \\     dcddsggs, 
-        \\     dcddsgvs, 
-        \\     dcdrecfm,  
-        \\     dcdrecft, 
-        \\     dcdrecfb, 
-        \\     dcdrecfs, 
-        \\     dcdrecfa, 
-        \\     dcdrecfc, 
-        \\     dcdnmext, 
-        \\     dcdvolsr, 
-        \\     dcdbklng, 
-        \\     dcdlrecl, 
-        \\     dcdallsp, 
-        \\     dcdusesp, 
-        \\     dcdscall, 
-        \\     dcdnmblk, 
-        \\     dcdcredt, 
-        \\     dcdexpdt, 
-        \\     dcdlstrf, 
-        \\     dcddsser, 
-        \\     dcdvolsq, 
-        \\     dcdlbkdt, 
-        \\     dcdatcl, 
-        \\     dcdstgcl, 
-        \\     dcdmgtcl, 
-        \\     dcdstgrp, 
-        \\     dcdccsid, 
-        \\     dcdudsiz, 
-        \\     dcdcudsz, 
-        \\     dcddscnt, 
-        \\     dcdovera, 
-        \\     dcdacct, 
-        \\     dcdallfx, 
-        \\     dcdusefx, 
-        \\     dcdscafx, 
-        \\     dcdnmbfx, 
-        \\     dcdjbnmc, 
-        \\     dcdstnmc, 
-        \\     dcdallsx, 
-        \\     dcdusesx, 
-        \\     dcdscalx, 
-        \\     dcdnmblx, 
-        \\     dcdxpsev, 
-        \\     dcdctype, 
-        \\     dcdtype, 
-        \\     dcdklbl) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?); 
+        \\     dcddsnam,
+        \\     dcdemngd,
+        \\     dcdedvvr,
+        \\     dcdnospc,
+        \\     dcdvsami,
+        \\     dcdnofm1,
+        \\     dcdracfd,
+        \\     dcdsmsm,
+        \\     dcdtemp,
+        \\     dcdpdse,
+        \\     dcdgds,
+        \\     dcdreblk,
+        \\     dcdchind,
+        \\     dcdckdsi,
+        \\     dcdnovvr,
+        \\     dcdintcg,
+        \\     dcdinicf,
+        \\     dcdallfg,
+        \\     dcdusefg,
+        \\     dcdsecfg,
+        \\     dcdnmbfg,
+        \\     dcdpdsex,
+        \\     dcdstrp,
+        \\     dcdddmex,
+        \\     dcdcpoit,
+        \\     dcdgt64k,
+        \\     dcdcmptv,
+        \\     dcddsgis,
+        \\     dcddsgps,
+        \\     dcddsgda,
+        \\     dcddsgpo,
+        \\     dcddsgu,
+        \\     dcddsggs,
+        \\     dcddsgvs,
+        \\     dcdrecfm,
+        \\     dcdrecft,
+        \\     dcdrecfb,
+        \\     dcdrecfs,
+        \\     dcdrecfa,
+        \\     dcdrecfc,
+        \\     dcdnmext,
+        \\     dcdvolsr,
+        \\     dcdbklng,
+        \\     dcdlrecl,
+        \\     dcdallsp,
+        \\     dcdusesp,
+        \\     dcdscall,
+        \\     dcdnmblk,
+        \\     dcdcredt,
+        \\     dcdexpdt,
+        \\     dcdlstrf,
+        \\     dcddsser,
+        \\     dcdvolsq,
+        \\     dcdlbkdt,
+        \\     dcdatcl,
+        \\     dcdstgcl,
+        \\     dcdmgtcl,
+        \\     dcdstgrp,
+        \\     dcdccsid,
+        \\     dcdudsiz,
+        \\     dcdcudsz,
+        \\     dcddscnt,
+        \\     dcdovera,
+        \\     dcdacct,
+        \\     dcdallfx,
+        \\     dcdusefx,
+        \\     dcdscafx,
+        \\     dcdnmbfx,
+        \\     dcdjbnmc,
+        \\     dcdstnmc,
+        \\     dcdallsx,
+        \\     dcdusesx,
+        \\     dcdscalx,
+        \\     dcdnmblx,
+        \\     dcdxpsev,
+        \\     dcdctype,
+        \\     dcdtype,
+        \\     dcdklbl) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
         \\
     ;
 
-    pub fn error_dcdemngd(self: *RecordD) bool {
-        return self.dcderror[0] & 0x80 != 0;
-    }
+    pub const error_dcdemngd = util.bitFlag(RecordD, "dcderror", 0x80);
+    pub const error_dcdedvvr = util.bitFlag(RecordD, "dcderror", 0x40);
+    pub const error_dcdnospc = util.bitFlag(RecordD, "dcderror", 0x20);
+    pub const error_dcdvsami = util.bitFlag(RecordD, "dcderror", 0x10);
+    pub const error_dcdnofm1 = util.bitFlag(RecordD, "dcderror", 0x08);
 
-    pub fn error_dcdedvvr(self: *RecordD) bool {
-        return self.dcderror[0] & 0x40 != 0;
-    }
+    pub const flag1_dcdracfd = util.bitFlag(RecordD, "dcdflag1", 0x80);
+    pub const flag1_dcdsmsm = util.bitFlag(RecordD, "dcdflag1", 0x40);
+    pub const flag1_dcdtemp = util.bitFlag(RecordD, "dcdflag1", 0x20);
+    pub const flag1_dcdpdse = util.bitFlag(RecordD, "dcdflag1", 0x10);
+    pub const flag1_dcdgds = util.bitFlag(RecordD, "dcdflag1", 0x08);
+    pub const flag1_dcdreblk = util.bitFlag(RecordD, "dcdflag1", 0x04);
+    pub const flag1_dcdchind = util.bitFlag(RecordD, "dcdflag1", 0x02);
+    pub const flag1_dcdckdsi = util.bitFlag(RecordD, "dcdflag1", 0x01);
 
-    pub fn error_dcdnospc(self: *RecordD) bool {
-        return self.dcderror[0] & 0x20 != 0;
-    }
+    pub const flag2_dcdnovvr = util.bitFlag(RecordD, "dcdflag2", 0x80);
+    pub const flag2_dcdintcg = util.bitFlag(RecordD, "dcdflag2", 0x40);
+    pub const flag2_dcdinicf = util.bitFlag(RecordD, "dcdflag2", 0x20);
+    pub const flag2_dcdallfg = util.bitFlag(RecordD, "dcdflag2", 0x08);
+    pub const flag2_dcdusefg = util.bitFlag(RecordD, "dcdflag2", 0x04);
+    pub const flag2_dcdsecfg = util.bitFlag(RecordD, "dcdflag2", 0x02);
+    pub const flag2_dcdnmbfg = util.bitFlag(RecordD, "dcdflag2", 0x01);
 
-    pub fn error_dcdvsami(self: *RecordD) bool {
-        return self.dcderror[0] & 0x10 != 0;
-    }
+    pub const flag3_dcdpdsex = util.bitFlag(RecordD, "dcdflag3", 0x80);
+    pub const flag3_dcdstrp = util.bitFlag(RecordD, "dcdflag3", 0x40);
+    pub const flag3_dcdddmex = util.bitFlag(RecordD, "dcdflag3", 0x20);
+    pub const flag3_dcdcpoit = util.bitFlag(RecordD, "dcdflag3", 0x10);
+    pub const flag3_dcdgt64k = util.bitFlag(RecordD, "dcdflag3", 0x08);
+    pub const flag3_dcdcmptv = util.bitFlag(RecordD, "dcdflag3", 0x04);
 
-    pub fn error_dcdnofm1(self: *RecordD) bool {
-        return self.dcderror[0] & 0x08 != 0;
-    }
+    pub const dsorg_dcddsgis = util.bitFlag(RecordD, "dcddsorg1", 0x80);
+    pub const dsorg_dcddsgps = util.bitFlag(RecordD, "dcddsorg1", 0x40);
+    pub const dsorg_dcddsgda = util.bitFlag(RecordD, "dcddsorg1", 0x20);
+    pub const dsorg_dcddsgpo = util.bitFlag(RecordD, "dcddsorg1", 0x02);
+    pub const dsorg_dcddsgu = util.bitFlag(RecordD, "dcddsorg1", 0x01);
+    pub const dsorg_dcddsggs = util.bitFlag(RecordD, "dcddsorg2", 0x80);
+    pub const dsorg_dcddsgvs = util.bitFlag(RecordD, "dcddsorg2", 0x08);
 
-    pub fn flag1_dcdracfd(self: *RecordD) bool {
-        return self.dcdflag1[0] & 0x80 != 0;
-    }
+    pub const recrd_dcdrecff = util.bitFlag(RecordD, "dcdrecrd", 0x80);
+    pub const recrd_dcdrecfv = util.bitFlag(RecordD, "dcdrecrd", 0x40);
+    pub const recrd_dcdrecft = util.bitFlag(RecordD, "dcdrecrd", 0x20);
+    pub const recrd_dcdrecfb = util.bitFlag(RecordD, "dcdrecrd", 0x10);
+    pub const recrd_dcdrecfs = util.bitFlag(RecordD, "dcdrecrd", 0x08);
+    pub const recrd_dcdrecfa = util.bitFlag(RecordD, "dcdrecrd", 0x04);
+    pub const recrd_dcdrecfc = util.bitFlag(RecordD, "dcdrecrd", 0x02);
 
-    pub fn flag1_dcdsmsm(self: *RecordD) bool {
-        return self.dcdflag1[0] & 0x40 != 0;
-    }
+    pub const flag5_dcdallfx = util.bitFlag(RecordD, "dcdflag5", 0x80);
+    pub const flag5_dcdusefx = util.bitFlag(RecordD, "dcdflag5", 0x40);
+    pub const flag5_dcdscafx = util.bitFlag(RecordD, "dcdflag5", 0x20);
+    pub const flag5_dcdnmbfx = util.bitFlag(RecordD, "dcdflag5", 0x10);
 
-    pub fn flag1_dcdtemp(self: *RecordD) bool {
-        return self.dcdflag1[0] & 0x20 != 0;
-    }
+    pub inline fn bind(self: *RecordD, db: *Database, stmt: common.Stmt) !void {
+        util.bcd2asc(&self.dcddsnam);
+        try db.bindText(stmt, 1, &self.dcddsnam);
 
-    pub fn flag1_dcdpdse(self: *RecordD) bool {
-        return self.dcdflag1[0] & 0x10 != 0;
-    }
+        try db.bindBool(stmt, 2, self.error_dcdemngd());
+        try db.bindBool(stmt, 3, self.error_dcdedvvr());
+        try db.bindBool(stmt, 4, self.error_dcdnospc());
+        try db.bindBool(stmt, 5, self.error_dcdvsami());
+        try db.bindBool(stmt, 6, self.error_dcdnofm1());
+        try db.bindBool(stmt, 7, self.flag1_dcdracfd());
+        try db.bindBool(stmt, 8, self.flag1_dcdsmsm());
+        try db.bindBool(stmt, 9, self.flag1_dcdtemp());
+        try db.bindBool(stmt, 10, self.flag1_dcdpdse());
+        try db.bindBool(stmt, 11, self.flag1_dcdgds());
+        try db.bindBool(stmt, 12, self.flag1_dcdreblk());
+        try db.bindBool(stmt, 13, self.flag1_dcdchind());
+        try db.bindBool(stmt, 14, self.flag1_dcdckdsi());
+        try db.bindBool(stmt, 15, self.flag2_dcdnovvr());
+        try db.bindBool(stmt, 16, self.flag2_dcdintcg());
+        try db.bindBool(stmt, 17, self.flag2_dcdinicf());
+        try db.bindBool(stmt, 18, self.flag2_dcdallfg());
+        try db.bindBool(stmt, 19, self.flag2_dcdusefg());
+        try db.bindBool(stmt, 20, self.flag2_dcdsecfg());
+        try db.bindBool(stmt, 21, self.flag2_dcdnmbfg());
+        try db.bindBool(stmt, 22, self.flag3_dcdpdsex());
+        try db.bindBool(stmt, 23, self.flag3_dcdstrp());
+        try db.bindBool(stmt, 24, self.flag3_dcdddmex());
+        try db.bindBool(stmt, 25, self.flag3_dcdcpoit());
+        try db.bindBool(stmt, 26, self.flag3_dcdgt64k());
+        try db.bindBool(stmt, 27, self.flag3_dcdcmptv());
+        try db.bindBool(stmt, 28, self.dsorg_dcddsgis());
+        try db.bindBool(stmt, 29, self.dsorg_dcddsgps());
+        try db.bindBool(stmt, 30, self.dsorg_dcddsgda());
+        try db.bindBool(stmt, 31, self.dsorg_dcddsgpo());
+        try db.bindBool(stmt, 32, self.dsorg_dcddsgu());
+        try db.bindBool(stmt, 33, self.dsorg_dcddsggs());
+        try db.bindBool(stmt, 34, self.dsorg_dcddsgvs());
 
-    pub fn flag1_dcdgds(self: *RecordD) bool {
-        return self.dcdflag1[0] & 0x08 != 0;
-    }
+        const dcdrecfm = blk: {
+            if (self.recrd_dcdrecff() and self.recrd_dcdrecfv()) {
+                break :blk "U";
+            } else if (self.recrd_dcdrecff()) {
+                break :blk "F";
+            } else if (self.recrd_dcdrecfv()) {
+                break :blk "V";
+            } else {
+                break :blk "";
+            }
+        };
+        try db.bindText(stmt, 35, dcdrecfm);
 
-    pub fn flag1_dcdreblk(self: *RecordD) bool {
-        return self.dcdflag1[0] & 0x04 != 0;
-    }
+        try db.bindBool(stmt, 36, self.recrd_dcdrecft());
+        try db.bindBool(stmt, 37, self.recrd_dcdrecfb());
+        try db.bindBool(stmt, 38, self.recrd_dcdrecfs());
+        try db.bindBool(stmt, 39, self.recrd_dcdrecfa());
+        try db.bindBool(stmt, 40, self.recrd_dcdrecfc());
+        try db.bindInt(stmt, 41, self.dcdnmext);
 
-    pub fn flag1_dcdchind(self: *RecordD) bool {
-        return self.dcdflag1[0] & 0x02 != 0;
-    }
+        util.bcd2asc(&self.dcdvolsr);
+        try db.bindText(stmt, 42, &self.dcdvolsr);
 
-    pub fn flag1_dcdckdsi(self: *RecordD) bool {
-        return self.dcdflag1[0] & 0x01 != 0;
-    }
+        try db.bindInt(stmt, 43, self.dcdbklng);
+        try db.bindInt(stmt, 44, self.dcdlrecl);
+        try db.bindInt(stmt, 45, self.dcdallsp);
+        try db.bindInt(stmt, 46, self.dcdusesp);
+        try db.bindInt(stmt, 47, self.dcdscall);
+        try db.bindInt(stmt, 48, self.dcdnmblk);
 
-    pub fn flag2_dcdnovvr(self: *RecordD) bool {
-        return self.dcdflag2[0] & 0x80 != 0;
-    }
+        var dcdcredt_str: [10]u8 = .{0} ** 10;
+        try util.dcdate(&dcdcredt_str, self.dcdcredt[0..]);
+        try db.bindText(stmt, 49, &dcdcredt_str);
 
-    pub fn flag2_dcdintcg(self: *RecordD) bool {
-        return self.dcdflag2[0] & 0x40 != 0;
-    }
+        var dcdexpdt_str: [10]u8 = .{0} ** 10;
+        try util.dcdate(&dcdexpdt_str, self.dcdexpdt[0..]);
+        try db.bindText(stmt, 50, &dcdexpdt_str);
 
-    pub fn flag2_dcdinicf(self: *RecordD) bool {
-        return self.dcdflag2[0] & 0x20 != 0;
-    }
+        var dcdlstrf_str: [10]u8 = .{0} ** 10;
+        try util.dcdate(&dcdlstrf_str, self.dcdlstrf[0..]);
+        try db.bindText(stmt, 51, &dcdlstrf_str);
 
-    pub fn flag2_dcdallfg(self: *RecordD) bool {
-        return self.dcdflag2[0] & 0x08 != 0;
-    }
+        util.bcd2asc(&self.dcddsser);
+        try db.bindText(stmt, 52, &self.dcddsser);
+        try db.bindInt(stmt, 53, self.dcdvolsq);
 
-    pub fn flag2_dcdusefg(self: *RecordD) bool {
-        return self.dcdflag2[0] & 0x04 != 0;
-    }
+        var dcdlbkdt1: [10]u8 = .{0} ** 10;
+        var dcdlbkdt2: [12]u8 = .{0} ** 12;
+        try util.dcdate(&dcdlbkdt1, self.dcdlbkdt[0..4]);
+        try util.smftime(&dcdlbkdt2, self.dcdlbkdt[4..8]);
+        try db.bindText(stmt, 54, &dcdlbkdt1 ++ " " ++ &dcdlbkdt2);
 
-    pub fn flag2_dcdsecfg(self: *RecordD) bool {
-        return self.dcdflag2[0] & 0x02 != 0;
-    }
+        util.bcd2asc(&self.dcdatcl);
+        try db.bindText(stmt, 55, &self.dcdatcl);
+        util.bcd2asc(&self.dcdstgcl);
+        try db.bindText(stmt, 56, &self.dcdstgcl);
+        util.bcd2asc(&self.dcdmgtcl);
+        try db.bindText(stmt, 57, &self.dcdmgtcl);
+        util.bcd2asc(&self.dcdstgrp);
+        try db.bindText(stmt, 58, &self.dcdstgrp);
 
-    pub fn flag2_dcdnmbfg(self: *RecordD) bool {
-        return self.dcdflag2[0] & 0x01 != 0;
-    }
+        try db.bindText(stmt, 59, &std.fmt.bytesToHex(&self.dcdccsid, .upper));
 
-    pub fn flag3_dcdpdsex(self: *RecordD) bool {
-        return self.dcdflag3[0] & 0x80 != 0;
-    }
+        try db.bindInt64(stmt, 60, self.dcdudsiz);
+        try db.bindInt64(stmt, 61, self.dcdcudsz);
+        try db.bindInt(stmt, 62, self.dcdscnt);
+        try db.bindInt(stmt, 63, self.dcdovera);
 
-    pub fn flag3_dcdstrp(self: *RecordD) bool {
-        return self.dcdflag3[0] & 0x40 != 0;
-    }
+        util.bcd2asc(&self.dcdacct);
+        try db.bindText(stmt, 64, &self.dcdacct);
 
-    pub fn flag3_dcdddmex(self: *RecordD) bool {
-        return self.dcdflag3[0] & 0x20 != 0;
-    }
+        try db.bindBool(stmt, 65, self.flag5_dcdallfx());
+        try db.bindBool(stmt, 66, self.flag5_dcdusefx());
+        try db.bindBool(stmt, 67, self.flag5_dcdscafx());
+        try db.bindBool(stmt, 68, self.flag5_dcdnmbfx());
 
-    pub fn flag3_dcdcpoit(self: *RecordD) bool {
-        return self.dcdflag3[0] & 0x10 != 0;
-    }
+        util.bcd2asc(&self.dcdjbnmc);
+        try db.bindText(stmt, 69, &self.dcdjbnmc);
+        util.bcd2asc(&self.dcdstnmc);
+        try db.bindText(stmt, 70, &self.dcdstnmc);
 
-    pub fn flag3_dcdgt64k(self: *RecordD) bool {
-        return self.dcdflag3[0] & 0x08 != 0;
-    }
+        try db.bindInt64(stmt, 71, self.dcdallsx);
+        try db.bindInt64(stmt, 72, self.dcdusesx);
+        try db.bindInt64(stmt, 73, self.dcdscalx);
+        try db.bindInt64(stmt, 74, self.dcdnmblx);
+        try db.bindInt(stmt, 75, self.dcdxpsev);
+        try db.bindInt(stmt, 76, self.dcdctype);
+        try db.bindInt(stmt, 77, self.dcdtype);
 
-    pub fn flag3_dcdcmptv(self: *RecordD) bool {
-        return self.dcdflag3[0] & 0x04 != 0;
-    }
+        const dcdklbl = blk: {
+            if (self.dcdtype == 0xFFFF) {
+                break :blk " " ** 64;
+            } else {
+                util.bcd2asc(&self.dcdklbl);
+                break :blk &self.dcdklbl;
+            }
+        };
 
-    pub fn dsorg_dcddsgis(self: *RecordD) bool {
-        return self.dcddsorg[0] & 0x80 != 0;
-    }
-
-    pub fn dsorg_dcddsgps(self: *RecordD) bool {
-        return self.dcddsorg[0] & 0x40 != 0;
-    }
-
-    pub fn dsorg_dcddsgda(self: *RecordD) bool {
-        return self.dcddsorg[0] & 0x20 != 0;
-    }
-
-    pub fn dsorg_dcddsgpo(self: *RecordD) bool {
-        return self.dcddsorg[0] & 0x02 != 0;
-    }
-
-    pub fn dsorg_dcddsgu(self: *RecordD) bool {
-        return self.dcddsorg[0] & 0x01 != 0;
-    }
-
-    pub fn dsorg_dcddsggs(self: *RecordD) bool {
-        return self.dcddsorg[1] & 0x80 != 0;
-    }
-
-    pub fn dsorg_dcddsgvs(self: *RecordD) bool {
-        return self.dcddsorg[1] & 0x08 != 0;
-    }
-
-    pub fn recrd_dcdrecff(self: *RecordD) bool {
-        return self.dcdrecrd[0] & 0x80 != 0;
-    }
-
-    pub fn recrd_dcdrecfv(self: *RecordD) bool {
-        return self.dcdrecrd[0] & 0x40 != 0;
-    }
-
-    pub fn recrd_dcdrecft(self: *RecordD) bool {
-        return self.dcdrecrd[0] & 0x20 != 0;
-    }
-
-    pub fn recrd_dcdrecfb(self: *RecordD) bool {
-        return self.dcdrecrd[0] & 0x10 != 0;
-    }
-
-    pub fn recrd_dcdrecfs(self: *RecordD) bool {
-        return self.dcdrecrd[0] & 0x08 != 0;
-    }
-
-    pub fn recrd_dcdrecfa(self: *RecordD) bool {
-        return self.dcdrecrd[0] & 0x04 != 0;
-    }
-
-    pub fn recrd_dcdrecfc(self: *RecordD) bool {
-        return self.dcdrecrd[0] & 0x02 != 0;
-    }
-
-    pub fn flag5_dcdallfx(self: *RecordD) bool {
-        return self.dcdflag5[0] & 0x80 != 0;
-    }
-
-    pub fn flag5_dcdusefx(self: *RecordD) bool {
-        return self.dcdflag5[0] & 0x40 != 0;
-    }
-
-    pub fn flag5_dcdscafx(self: *RecordD) bool {
-        return self.dcdflag5[0] & 0x20 != 0;
-    }
-
-    pub fn flag5_dcdnmbfx(self: *RecordD) bool {
-        return self.dcdflag5[0] & 0x10 != 0;
+        try db.bindText(stmt, 78, dcdklbl);
     }
 };
+
+pub const Record = RecordD;
+pub const record_key = "D ";
+pub const process = common.genericProcess(@This());
+
+test "record size" {
+    std.debug.print("RecordD size: {d}\n", .{@sizeOf(RecordD)});
+    try std.testing.expect(@sizeOf(RecordD) == 468);
+}
