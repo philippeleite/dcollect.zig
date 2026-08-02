@@ -1,36 +1,13 @@
 const std = @import("std");
 const util = @import("util.zig");
 const zon = @import("zon");
-const records = @import("records.zig");
-const Header = records.Header;
-const RecordD = @import("recordD.zig").RecordD;
-const RecordA = @import("recordA.zig").RecordA;
-const RecordV = @import("recordV.zig").RecordV;
-const RecordDC = @import("recordDC.zig").RecordDC;
-const Database = @import("db.zig").Database;
-
-const Context = struct {
-    dcollect_file: []const u8,
-    sqlite_db_file: []const u8,
-    init: std.process.Init,
-    db: Database,
-
-    fn print(self: *Context, comptime fmt: []const u8, args: anytype) !void {
-        var stdout_buffer: [1024]u8 = undefined;
-        var stdout_writer: std.Io.File.Writer = .init(.stdout(), self.init.io, &stdout_buffer);
-        const stdout = &stdout_writer.interface;
-        try stdout.print(fmt, args);
-        try stdout.flush();
-    }
-};
+const common = @import("common.zig");
+const Context = common.Context;
+const Database = common.Database;
 
 pub fn main(init: std.process.Init) !void {
-    var ctx = Context{
-        .dcollect_file = "",
-        .sqlite_db_file = "",
-        .init = init,
-        .db = undefined,
-    };
+    var ctx = Context.init(init);
+    defer ctx.deinit();
 
     var parser = ArgParser{ .ctx = &ctx };
     parser.parseArgs() catch |err| {
@@ -47,14 +24,15 @@ pub fn main(init: std.process.Init) !void {
         std.debug.print("Error processing file {s}: {s}\n", .{ ctx.dcollect_file, @errorName(err) });
         std.process.exit(1);
     };
+    try file_parser.showCounters();
 }
 
 const ArgParser = struct {
     ctx: *Context,
 
     fn parseArgs(self: *ArgParser) !void {
-        const args = self.ctx.init.minimal.args;
-        const allocator = self.ctx.init.arena.allocator();
+        const args = self.ctx.in.minimal.args;
+        const allocator = self.ctx.in.arena.allocator();
 
         var iter = args.iterateAllocator(allocator) catch |err| {
             std.debug.print("Error iterating arguments: {s}\n", .{@errorName(err)});
@@ -111,37 +89,35 @@ const FileParser = struct {
     ctx: *Context,
 
     fn parseFile(self: *FileParser) !void {
-        const allocator = self.ctx.init.arena.allocator();
-        const io = self.ctx.init.io;
+        const allocator = self.ctx.in.arena.allocator();
+        const io = self.ctx.in.io;
 
-        std.log.debug("dcollect_file: {s}\n", .{self.ctx.dcollect_file});
-        std.log.debug("sqlite_db_file: {s}\n", .{self.ctx.sqlite_db_file});
-
-        const stat = try std.Io.Dir.cwd().statFile(io, self.ctx.dcollect_file, .{});
+        // Check if the dcollect file exists and get its size
+        const stat = std.Io.Dir.cwd().statFile(io, self.ctx.dcollect_file, .{}) catch |err| {
+            if (err == error.FileNotFound) {
+                std.log.err("DCOLLECT file not found: {s}", .{self.ctx.dcollect_file});
+            } else {
+                std.log.err("Failed to stat dcollect file: {s}", .{@errorName(err)});
+            }
+            return err;
+        };
         const file_size = stat.size;
         try self.ctx.print("DCOLLECT File: {s}\n", .{self.ctx.dcollect_file});
         try self.ctx.print("DCOLLECT File size: {d} bytes\n\n", .{file_size});
 
-        const file = try std.Io.Dir.cwd().openFile(io, self.ctx.dcollect_file, .{});
+        // Open the dcollect file for reading
+        const file = try std.Io.Dir.cwd().openFile(io, self.ctx.dcollect_file, .{.mode = .read_only});
         defer file.close(io);
 
+        // Initialize the SQLite database
         self.ctx.db = try Database.init(allocator, self.ctx.sqlite_db_file);
         defer self.ctx.db.deinit();
 
         var read_buffer: [4096]u8 = undefined;
         var reader = file.reader(io, &read_buffer);
 
-        std.log.debug("RecordD size: {d}\n", .{@sizeOf(RecordD)});
-        std.log.debug("RecordA size: {d}\n", .{@sizeOf(RecordA)});
-        std.log.debug("RecordV size: {d}\n", .{@sizeOf(RecordV)});
-        std.log.debug("RecordDC size: {d}\n", .{@sizeOf(RecordDC)});
-
-        var countD: usize = 0;
-        var countA: usize = 0;
-        var countV: usize = 0;
-        var countDC: usize = 0;
         while (true) {
-            const header = reader.interface.peekStruct(Header, .big) catch |err| {
+            const reclen = reader.interface.peekInt(u16, .big) catch |err| {
                 if (err == error.EndOfStream) {
                     break;
                 } else {
@@ -149,81 +125,56 @@ const FileParser = struct {
                 }
             };
 
-            var rec_type = header.dcurctyp;
-            util.bcd2asc(&rec_type);
-            const int_type: u16 = @bitCast(rec_type);
-
-            switch (int_type) {
-                util.asUint(u16, "D ") => {
-                    var record_d = reader.interface.takeStruct(RecordD, .big) catch |err| {
-                        if (err == error.EndOfStream) {
-                            break;
-                        } else {
-                            return err;
-                        }
-                    };
-                    countD += 1;
-                    // _ = &record_d; // Currently not processing RecordD, but we can add processing logic here if needed
-                    try self.ctx.db.processRecordD(&record_d);
-                },
-                util.asUint(u16, "A ") => {
-                    var record_a = reader.interface.takeStruct(RecordA, .big) catch |err| {
-                        if (err == error.EndOfStream) {
-                            break;
-                        } else {
-                            return err;
-                        }
-                    };
-                    countA += 1;
-                    // _ = &record_a; // Currently not processing RecordA, but we can add processing logic here if needed
-                    try self.ctx.db.processRecordA(&record_a);
-                },
-                util.asUint(u16, "V ") => {
-                    var record_v = reader.interface.takeStruct(RecordV, .big) catch |err| {
-                        if (err == error.EndOfStream) {
-                            break;
-                        } else {
-                            return err;
-                        }
-                    };
-                    countV += 1;
-                    // _ = &record_v; // Currently not processing RecordV, but we can add processing logic here if needed
-                    try self.ctx.db.processRecordV(&record_v);
-                },
-                util.asUint(u16, "DC") => {
-                    var record_dc = reader.interface.takeStruct(RecordDC, .big) catch |err| {
-                        if (err == error.EndOfStream) {
-                            break;
-                        } else {
-                            return err;
-                        }
-                    };
-                    countDC += 1;
-                    // _ = &record_dc; // Currently not processing RecordDC, but we can add processing logic here if needed
-                    try self.ctx.db.processRecordDC(&record_dc);
-                },
-                else => {
-                    _ = reader.interface.take(header.dculeng) catch |err| {
-                        if (err == error.EndOfStream) {
-                            break;
-                        } else {
-                            return err;
-                        }
-                    };
-                    continue;
-                },
-            }
+            const record = reader.interface.take(reclen) catch |err| {
+                if (err == error.EndOfStream) {
+                    break;
+                } else {
+                    return err;
+                }
+            };
+            try common.processRecord(self.ctx, record);
         }
+    }
 
+    fn showCounters(self: *FileParser) !void {
+        var buffer: [32]u8 = undefined;
         try self.ctx.print("Processed records:\n", .{});
-        try self.ctx.print("+---------------------+\n", .{});
-        try self.ctx.print("| D     |  {d:>10} |\n", .{countD});
-        try self.ctx.print("+---------------------+\n", .{});
-        try self.ctx.print("| A     |  {d:>10} |\n", .{countA});
-        try self.ctx.print("+---------------------+\n", .{});
-        try self.ctx.print("| V     |  {d:>10} |\n", .{countV});
-        try self.ctx.print("+---------------------+\n", .{});
-        try self.ctx.print("| DC    |  {d:>10} |\n", .{countDC});
-        try self.ctx.print("+---------------------+\n", .{});
+        try self.ctx.print("+--------------------+\n", .{});
+        var it = self.ctx.count.iterator();
+        while (it.next()) |entry| {
+            const value = util.commaInt(&buffer, entry.value_ptr.*);
+            try self.ctx.print("| {s:<3} | {s:>12} |\n", .{ entry.key_ptr.*, value });
+            try self.ctx.print("+--------------------+\n", .{});
+        }
     }
 };
+
+test "parseFile processes testdata/DCOLLECT and produces expected row counts" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+
+    var init: std.process.Init = undefined;
+    init.arena = &arena;
+    init.gpa = std.testing.allocator;
+    init.io = std.testing.io;
+
+    var ctx = Context.init(init);
+    defer ctx.deinit();
+    ctx.dcollect_file = "testdata/DCOLLECT";
+    ctx.sqlite_db_file = ":memory:";
+
+    // `zig build test` runs the test binary in a mode where stdin/stdout are
+    // reserved for the build runner's test protocol, so `ctx.print` must not
+    // write to the real stdout here. Discard it instead.
+    var discard_buffer: [256]u8 = undefined;
+    var discarding: std.Io.Writer.Discarding = .init(&discard_buffer);
+    ctx.stdout_override = &discarding.writer;
+
+    var file_parser = FileParser{ .ctx = &ctx };
+    try file_parser.parseFile();
+
+    try std.testing.expectEqual(@as(usize, 3791), ctx.count.get("D ").?);
+    try std.testing.expectEqual(@as(usize, 962), ctx.count.get("A ").?);
+    try std.testing.expectEqual(@as(usize, 19), ctx.count.get("V ").?);
+    try std.testing.expectEqual(@as(usize, 12), ctx.count.get("DC").?);
+}
