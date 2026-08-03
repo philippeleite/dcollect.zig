@@ -1,8 +1,6 @@
 const std = @import("std");
 const util = @import("util.zig");
 const common = @import("common.zig");
-const Context = common.Context;
-const Database = common.Database;
 const Header = common.Header;
 
 pub const RecordV = extern struct {
@@ -134,51 +132,51 @@ pub const RecordV = extern struct {
     pub const error_dcvebytk = util.bitFlag(RecordV, "dcverror", 0x40);
     pub const error_dcvelspc = util.bitFlag(RecordV, "dcverror", 0x20);
 
-    pub inline fn bind(self: *RecordV, db: *Database, stmt: common.Stmt) !void {
+    pub inline fn bind(self: *RecordV, b: *common.Binder) !void {
         util.bcd2asc(&self.dcvvolsr);
-        try db.bindText(stmt, 1, &self.dcvvolsr);
-        try db.bindBool(stmt, 2, self.flag1_dcvinxex());
-        try db.bindBool(stmt, 3, self.flag1_dcvinxen());
-        try db.bindBool(stmt, 4, self.flag1_dcvuspvt());
-        try db.bindBool(stmt, 5, self.flag1_dcvuspub());
-        try db.bindBool(stmt, 6, self.flag1_dcvussto());
-        try db.bindBool(stmt, 7, self.flag1_dcvshrds());
-        try db.bindBool(stmt, 8, self.flag1_dcvmangd());
-        try db.bindBool(stmt, 9, self.flag1_dcvinitl());
-        try db.bindBool(stmt, 10, self.error_dcvevlcp());
-        try db.bindBool(stmt, 11, self.error_dcvebytk());
-        try db.bindBool(stmt, 12, self.error_dcvelspc());
-        try db.bindInt(stmt, 13, self.dcvperct);
-        try db.bindInt64(stmt, 14, self.dcvfresp);
-        try db.bindInt64(stmt, 15, self.dcvalloc);
-        try db.bindInt64(stmt, 16, self.dcvvlcap);
-        try db.bindInt(stmt, 17, self.dcvfragi);
-        try db.bindInt64(stmt, 18, self.dcvlgext);
-        try db.bindInt(stmt, 19, self.dcvfrext);
-        try db.bindInt(stmt, 20, self.dcvfdscb);
-        try db.bindInt(stmt, 21, self.dcvfvirs);
+        try b.text(&self.dcvvolsr);
+        try b.boolean(self.flag1_dcvinxex());
+        try b.boolean(self.flag1_dcvinxen());
+        try b.boolean(self.flag1_dcvuspvt());
+        try b.boolean(self.flag1_dcvuspub());
+        try b.boolean(self.flag1_dcvussto());
+        try b.boolean(self.flag1_dcvshrds());
+        try b.boolean(self.flag1_dcvmangd());
+        try b.boolean(self.flag1_dcvinitl());
+        try b.boolean(self.error_dcvevlcp());
+        try b.boolean(self.error_dcvebytk());
+        try b.boolean(self.error_dcvelspc());
+        try b.int(self.dcvperct);
+        try b.int64(self.dcvfresp);
+        try b.int64(self.dcvalloc);
+        try b.int64(self.dcvvlcap);
+        try b.int(self.dcvfragi);
+        try b.int64(self.dcvlgext);
+        try b.int(self.dcvfrext);
+        try b.int(self.dcvfdscb);
+        try b.int(self.dcvfvirs);
 
         util.bcd2asc(&self.dcvdvtyp);
-        try db.bindText(stmt, 22, &self.dcvdvtyp);
+        try b.text(&self.dcvdvtyp);
 
-        try db.bindText(stmt, 23, &std.fmt.bytesToHex(self.dcvdvnum, .upper));
+        try b.text(&std.fmt.bytesToHex(self.dcvdvnum, .upper));
 
         util.bcd2asc(&self.dcvsgtcl);
-        try db.bindText(stmt, 24, &self.dcvsgtcl);
+        try b.text(&self.dcvsgtcl);
 
         util.bcd2asc(&self.dcvdptyp);
-        try db.bindText(stmt, 25, &self.dcvdptyp);
+        try b.text(&self.dcvdptyp);
 
-        try db.bindInt(stmt, 26, self.dcvtrpct);
-        try db.bindInt(stmt, 27, self.dcveavol);
-        try db.bindInt64(stmt, 28, self.dcvtrfsp);
-        try db.bindInt64(stmt, 29, self.dcvtralc);
-        try db.bindInt64(stmt, 30, self.dcvtrvlc);
-        try db.bindInt(stmt, 31, self.dcvtrfrg);
-        try db.bindInt64(stmt, 32, self.dcvtrlge);
-        try db.bindInt(stmt, 33, self.dcvtrfrx);
-        try db.bindInt(stmt, 34, self.dcvfcyls);
-        try db.bindInt(stmt, 35, self.dcvftrks);
+        try b.int(self.dcvtrpct);
+        try b.int(self.dcveavol);
+        try b.int64(self.dcvtrfsp);
+        try b.int64(self.dcvtralc);
+        try b.int64(self.dcvtrvlc);
+        try b.int(self.dcvtrfrg);
+        try b.int64(self.dcvtrlge);
+        try b.int(self.dcvtrfrx);
+        try b.int(self.dcvfcyls);
+        try b.int(self.dcvftrks);
     }
 };
 

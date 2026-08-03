@@ -1,8 +1,6 @@
 const std = @import("std");
 const util = @import("util.zig");
 const common = @import("common.zig");
-const Context = common.Context;
-const Database = common.Database;
 const Header = common.Header;
 
 pub const RecordD = extern struct {
@@ -283,43 +281,43 @@ pub const RecordD = extern struct {
     pub const flag5_dcdscafx = util.bitFlag(RecordD, "dcdflag5", 0x20);
     pub const flag5_dcdnmbfx = util.bitFlag(RecordD, "dcdflag5", 0x10);
 
-    pub inline fn bind(self: *RecordD, db: *Database, stmt: common.Stmt) !void {
+    pub inline fn bind(self: *RecordD, b: *common.Binder) !void {
         util.bcd2asc(&self.dcddsnam);
-        try db.bindText(stmt, 1, &self.dcddsnam);
+        try b.text(&self.dcddsnam);
 
-        try db.bindBool(stmt, 2, self.error_dcdemngd());
-        try db.bindBool(stmt, 3, self.error_dcdedvvr());
-        try db.bindBool(stmt, 4, self.error_dcdnospc());
-        try db.bindBool(stmt, 5, self.error_dcdvsami());
-        try db.bindBool(stmt, 6, self.error_dcdnofm1());
-        try db.bindBool(stmt, 7, self.flag1_dcdracfd());
-        try db.bindBool(stmt, 8, self.flag1_dcdsmsm());
-        try db.bindBool(stmt, 9, self.flag1_dcdtemp());
-        try db.bindBool(stmt, 10, self.flag1_dcdpdse());
-        try db.bindBool(stmt, 11, self.flag1_dcdgds());
-        try db.bindBool(stmt, 12, self.flag1_dcdreblk());
-        try db.bindBool(stmt, 13, self.flag1_dcdchind());
-        try db.bindBool(stmt, 14, self.flag1_dcdckdsi());
-        try db.bindBool(stmt, 15, self.flag2_dcdnovvr());
-        try db.bindBool(stmt, 16, self.flag2_dcdintcg());
-        try db.bindBool(stmt, 17, self.flag2_dcdinicf());
-        try db.bindBool(stmt, 18, self.flag2_dcdallfg());
-        try db.bindBool(stmt, 19, self.flag2_dcdusefg());
-        try db.bindBool(stmt, 20, self.flag2_dcdsecfg());
-        try db.bindBool(stmt, 21, self.flag2_dcdnmbfg());
-        try db.bindBool(stmt, 22, self.flag3_dcdpdsex());
-        try db.bindBool(stmt, 23, self.flag3_dcdstrp());
-        try db.bindBool(stmt, 24, self.flag3_dcdddmex());
-        try db.bindBool(stmt, 25, self.flag3_dcdcpoit());
-        try db.bindBool(stmt, 26, self.flag3_dcdgt64k());
-        try db.bindBool(stmt, 27, self.flag3_dcdcmptv());
-        try db.bindBool(stmt, 28, self.dsorg_dcddsgis());
-        try db.bindBool(stmt, 29, self.dsorg_dcddsgps());
-        try db.bindBool(stmt, 30, self.dsorg_dcddsgda());
-        try db.bindBool(stmt, 31, self.dsorg_dcddsgpo());
-        try db.bindBool(stmt, 32, self.dsorg_dcddsgu());
-        try db.bindBool(stmt, 33, self.dsorg_dcddsggs());
-        try db.bindBool(stmt, 34, self.dsorg_dcddsgvs());
+        try b.boolean(self.error_dcdemngd());
+        try b.boolean(self.error_dcdedvvr());
+        try b.boolean(self.error_dcdnospc());
+        try b.boolean(self.error_dcdvsami());
+        try b.boolean(self.error_dcdnofm1());
+        try b.boolean(self.flag1_dcdracfd());
+        try b.boolean(self.flag1_dcdsmsm());
+        try b.boolean(self.flag1_dcdtemp());
+        try b.boolean(self.flag1_dcdpdse());
+        try b.boolean(self.flag1_dcdgds());
+        try b.boolean(self.flag1_dcdreblk());
+        try b.boolean(self.flag1_dcdchind());
+        try b.boolean(self.flag1_dcdckdsi());
+        try b.boolean(self.flag2_dcdnovvr());
+        try b.boolean(self.flag2_dcdintcg());
+        try b.boolean(self.flag2_dcdinicf());
+        try b.boolean(self.flag2_dcdallfg());
+        try b.boolean(self.flag2_dcdusefg());
+        try b.boolean(self.flag2_dcdsecfg());
+        try b.boolean(self.flag2_dcdnmbfg());
+        try b.boolean(self.flag3_dcdpdsex());
+        try b.boolean(self.flag3_dcdstrp());
+        try b.boolean(self.flag3_dcdddmex());
+        try b.boolean(self.flag3_dcdcpoit());
+        try b.boolean(self.flag3_dcdgt64k());
+        try b.boolean(self.flag3_dcdcmptv());
+        try b.boolean(self.dsorg_dcddsgis());
+        try b.boolean(self.dsorg_dcddsgps());
+        try b.boolean(self.dsorg_dcddsgda());
+        try b.boolean(self.dsorg_dcddsgpo());
+        try b.boolean(self.dsorg_dcddsgu());
+        try b.boolean(self.dsorg_dcddsggs());
+        try b.boolean(self.dsorg_dcddsgvs());
 
         const dcdrecfm = blk: {
             if (self.recrd_dcdrecff() and self.recrd_dcdrecfv()) {
@@ -332,83 +330,83 @@ pub const RecordD = extern struct {
                 break :blk "";
             }
         };
-        try db.bindText(stmt, 35, dcdrecfm);
+        try b.text(dcdrecfm);
 
-        try db.bindBool(stmt, 36, self.recrd_dcdrecft());
-        try db.bindBool(stmt, 37, self.recrd_dcdrecfb());
-        try db.bindBool(stmt, 38, self.recrd_dcdrecfs());
-        try db.bindBool(stmt, 39, self.recrd_dcdrecfa());
-        try db.bindBool(stmt, 40, self.recrd_dcdrecfc());
-        try db.bindInt(stmt, 41, self.dcdnmext);
+        try b.boolean(self.recrd_dcdrecft());
+        try b.boolean(self.recrd_dcdrecfb());
+        try b.boolean(self.recrd_dcdrecfs());
+        try b.boolean(self.recrd_dcdrecfa());
+        try b.boolean(self.recrd_dcdrecfc());
+        try b.int(self.dcdnmext);
 
         util.bcd2asc(&self.dcdvolsr);
-        try db.bindText(stmt, 42, &self.dcdvolsr);
+        try b.text(&self.dcdvolsr);
 
-        try db.bindInt(stmt, 43, self.dcdbklng);
-        try db.bindInt(stmt, 44, self.dcdlrecl);
-        try db.bindInt(stmt, 45, self.dcdallsp);
-        try db.bindInt(stmt, 46, self.dcdusesp);
-        try db.bindInt(stmt, 47, self.dcdscall);
-        try db.bindInt(stmt, 48, self.dcdnmblk);
+        try b.int(self.dcdbklng);
+        try b.int(self.dcdlrecl);
+        try b.int(self.dcdallsp);
+        try b.int(self.dcdusesp);
+        try b.int(self.dcdscall);
+        try b.int(self.dcdnmblk);
 
         var dcdcredt_str: [10]u8 = .{0} ** 10;
         try util.dcdate(&dcdcredt_str, self.dcdcredt[0..]);
-        try db.bindText(stmt, 49, &dcdcredt_str);
+        try b.text(&dcdcredt_str);
 
         var dcdexpdt_str: [10]u8 = .{0} ** 10;
         try util.dcdate(&dcdexpdt_str, self.dcdexpdt[0..]);
-        try db.bindText(stmt, 50, &dcdexpdt_str);
+        try b.text(&dcdexpdt_str);
 
         var dcdlstrf_str: [10]u8 = .{0} ** 10;
         try util.dcdate(&dcdlstrf_str, self.dcdlstrf[0..]);
-        try db.bindText(stmt, 51, &dcdlstrf_str);
+        try b.text(&dcdlstrf_str);
 
         util.bcd2asc(&self.dcddsser);
-        try db.bindText(stmt, 52, &self.dcddsser);
-        try db.bindInt(stmt, 53, self.dcdvolsq);
+        try b.text(&self.dcddsser);
+        try b.int(self.dcdvolsq);
 
         var dcdlbkdt1: [10]u8 = .{0} ** 10;
         var dcdlbkdt2: [12]u8 = .{0} ** 12;
         try util.dcdate(&dcdlbkdt1, self.dcdlbkdt[0..4]);
         try util.smftime(&dcdlbkdt2, self.dcdlbkdt[4..8]);
-        try db.bindText(stmt, 54, &dcdlbkdt1 ++ " " ++ &dcdlbkdt2);
+        try b.text(&dcdlbkdt1 ++ " " ++ &dcdlbkdt2);
 
         util.bcd2asc(&self.dcdatcl);
-        try db.bindText(stmt, 55, &self.dcdatcl);
+        try b.text(&self.dcdatcl);
         util.bcd2asc(&self.dcdstgcl);
-        try db.bindText(stmt, 56, &self.dcdstgcl);
+        try b.text(&self.dcdstgcl);
         util.bcd2asc(&self.dcdmgtcl);
-        try db.bindText(stmt, 57, &self.dcdmgtcl);
+        try b.text(&self.dcdmgtcl);
         util.bcd2asc(&self.dcdstgrp);
-        try db.bindText(stmt, 58, &self.dcdstgrp);
+        try b.text(&self.dcdstgrp);
 
-        try db.bindText(stmt, 59, &std.fmt.bytesToHex(&self.dcdccsid, .upper));
+        try b.text(&std.fmt.bytesToHex(&self.dcdccsid, .upper));
 
-        try db.bindInt64(stmt, 60, self.dcdudsiz);
-        try db.bindInt64(stmt, 61, self.dcdcudsz);
-        try db.bindInt(stmt, 62, self.dcdscnt);
-        try db.bindInt(stmt, 63, self.dcdovera);
+        try b.int64(self.dcdudsiz);
+        try b.int64(self.dcdcudsz);
+        try b.int(self.dcdscnt);
+        try b.int(self.dcdovera);
 
         util.bcd2asc(&self.dcdacct);
-        try db.bindText(stmt, 64, &self.dcdacct);
+        try b.text(&self.dcdacct);
 
-        try db.bindBool(stmt, 65, self.flag5_dcdallfx());
-        try db.bindBool(stmt, 66, self.flag5_dcdusefx());
-        try db.bindBool(stmt, 67, self.flag5_dcdscafx());
-        try db.bindBool(stmt, 68, self.flag5_dcdnmbfx());
+        try b.boolean(self.flag5_dcdallfx());
+        try b.boolean(self.flag5_dcdusefx());
+        try b.boolean(self.flag5_dcdscafx());
+        try b.boolean(self.flag5_dcdnmbfx());
 
         util.bcd2asc(&self.dcdjbnmc);
-        try db.bindText(stmt, 69, &self.dcdjbnmc);
+        try b.text(&self.dcdjbnmc);
         util.bcd2asc(&self.dcdstnmc);
-        try db.bindText(stmt, 70, &self.dcdstnmc);
+        try b.text(&self.dcdstnmc);
 
-        try db.bindInt64(stmt, 71, self.dcdallsx);
-        try db.bindInt64(stmt, 72, self.dcdusesx);
-        try db.bindInt64(stmt, 73, self.dcdscalx);
-        try db.bindInt64(stmt, 74, self.dcdnmblx);
-        try db.bindInt(stmt, 75, self.dcdxpsev);
-        try db.bindInt(stmt, 76, self.dcdctype);
-        try db.bindInt(stmt, 77, self.dcdtype);
+        try b.int64(self.dcdallsx);
+        try b.int64(self.dcdusesx);
+        try b.int64(self.dcdscalx);
+        try b.int64(self.dcdnmblx);
+        try b.int(self.dcdxpsev);
+        try b.int(self.dcdctype);
+        try b.int(self.dcdtype);
 
         const dcdklbl = blk: {
             if (self.dcdtype == 0xFFFF) {
@@ -419,7 +417,7 @@ pub const RecordD = extern struct {
             }
         };
 
-        try db.bindText(stmt, 78, dcdklbl);
+        try b.text(dcdklbl);
     }
 };
 

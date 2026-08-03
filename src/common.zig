@@ -45,6 +45,39 @@ pub const Context = struct {
 
 pub const Stmt = *c.sqlite3_stmt;
 
+/// Binds positional SQLite parameters in call order, tracking the column
+/// index automatically so record `bind()` implementations never need to
+/// hardcode (and keep in sync) a column number per field.
+pub const Binder = struct {
+    db: *Database,
+    stmt: Stmt,
+    index: c_int = 1,
+
+    pub fn text(self: *Binder, value: []const u8) !void {
+        try self.db.bindText(self.stmt, self.index, value);
+        self.index += 1;
+    }
+
+    pub fn boolean(self: *Binder, value: bool) !void {
+        try self.db.bindBool(self.stmt, self.index, value);
+        self.index += 1;
+    }
+
+    pub fn int(self: *Binder, value: i32) !void {
+        try self.db.bindInt(self.stmt, self.index, value);
+        self.index += 1;
+    }
+
+    pub fn int64(self: *Binder, value: i64) !void {
+        try self.db.bindInt64(self.stmt, self.index, value);
+        self.index += 1;
+    }
+};
+
+fn placeholderCount(comptime sql: []const u8) comptime_int {
+    return std.mem.count(u8, sql, "?");
+}
+
 pub const Database = struct {
     db: *c.sqlite3 = undefined,
     stmts: [record_modules.len]Stmt = undefined,
@@ -210,12 +243,15 @@ fn indexOf(comptime m: type) usize {
 
 pub fn genericProcess(comptime m: type) procFn {
     const idx = comptime indexOf(m);
+    const expected_columns = comptime placeholderCount(m.Record.insertSQL);
     return struct {
         fn process(ctx: *Context, record: []u8) anyerror!void {
             var rec: *m.Record = @ptrCast(@alignCast(record[0..@sizeOf(m.Record)]));
             std.mem.byteSwapAllFields(m.Record, rec);
             const stmt = ctx.db.stmts[idx];
-            try rec.bind(&ctx.db, stmt);
+            var binder = Binder{ .db = &ctx.db, .stmt = stmt };
+            try rec.bind(&binder);
+            std.debug.assert(binder.index - 1 == expected_columns);
             try ctx.db.step(stmt);
             try ctx.db.reset(stmt);
 

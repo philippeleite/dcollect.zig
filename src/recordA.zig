@@ -1,8 +1,6 @@
 const std = @import("std");
 const util = @import("util.zig");
 const common = @import("common.zig");
-const Context = common.Context;
-const Database = common.Database;
 const Header = common.Header;
 
 pub const RecordA = extern struct {
@@ -131,48 +129,48 @@ pub const RecordA = extern struct {
     pub const flag2_dcag4g = util.bitFlag(RecordA, "dcaflag2", 0x04);
     pub const flag2_dcazfs = util.bitFlag(RecordA, "dcaflag2", 0x02);
 
-    pub inline fn bind(self: *RecordA, db: *Database, stmt: common.Stmt) !void {
+    pub inline fn bind(self: *RecordA, b: *common.Binder) !void {
         util.bcd2asc(&self.dcadsnam);
-        try db.bindText(stmt, 1, &self.dcadsnam);
+        try b.text(&self.dcadsnam);
 
         util.bcd2asc(&self.dcaassoc);
-        try db.bindText(stmt, 2, &self.dcaassoc);
+        try b.text(&self.dcaassoc);
 
-        try db.bindBool(stmt, 3, self.flag1_dcaksds());
-        try db.bindBool(stmt, 4, self.flag1_dcaesds());
-        try db.bindBool(stmt, 5, self.flag1_dcarrds());
-        try db.bindBool(stmt, 6, self.flag1_dcalds());
-        try db.bindBool(stmt, 7, self.flag1_dcakrds());
-        try db.bindBool(stmt, 8, self.flag1_dcaaix());
-        try db.bindBool(stmt, 9, self.flag1_dcadata());
-        try db.bindBool(stmt, 10, self.flag1_dcaindex());
-        try db.bindBool(stmt, 11, self.flag2_dcakr1st());
-        try db.bindBool(stmt, 12, self.flag2_dcaixupg());
-        try db.bindBool(stmt, 13, self.flag2_dcavrrds());
-        try db.bindBool(stmt, 14, self.flag2_dcanstat());
-        try db.bindBool(stmt, 15, self.flag2_dcasrci());
-        try db.bindBool(stmt, 16, self.flag2_dcag4g());
-        try db.bindBool(stmt, 17, self.flag2_dcazfs());
-        try db.bindInt64(stmt, 18, self.dcahurba);
-        try db.bindInt64(stmt, 19, self.dcaharba);
-        try db.bindInt64(stmt, 20, self.dcanlr);
-        try db.bindInt64(stmt, 21, self.dcadlr);
-        try db.bindInt64(stmt, 22, self.dcainr);
-        try db.bindInt64(stmt, 23, self.dcaupr);
-        try db.bindInt64(stmt, 24, self.dcartr);
-        try db.bindInt64(stmt, 25, self.dcaasp);
-        try db.bindInt64(stmt, 26, self.dcacis);
-        try db.bindInt64(stmt, 27, self.dcacas);
-        try db.bindInt64(stmt, 28, self.dcaexc);
-        try db.bindInt64(stmt, 29, self.dcarkp);
-        try db.bindInt64(stmt, 30, self.dcakln);
-        try db.bindInt64(stmt, 31, self.dcahurbc);
-        try db.bindInt64(stmt, 32, self.dcaharbc);
-        try db.bindInt(stmt, 33, self.dcacisz);
-        try db.bindInt(stmt, 34, self.dcacaci);
+        try b.boolean(self.flag1_dcaksds());
+        try b.boolean(self.flag1_dcaesds());
+        try b.boolean(self.flag1_dcarrds());
+        try b.boolean(self.flag1_dcalds());
+        try b.boolean(self.flag1_dcakrds());
+        try b.boolean(self.flag1_dcaaix());
+        try b.boolean(self.flag1_dcadata());
+        try b.boolean(self.flag1_dcaindex());
+        try b.boolean(self.flag2_dcakr1st());
+        try b.boolean(self.flag2_dcaixupg());
+        try b.boolean(self.flag2_dcavrrds());
+        try b.boolean(self.flag2_dcanstat());
+        try b.boolean(self.flag2_dcasrci());
+        try b.boolean(self.flag2_dcag4g());
+        try b.boolean(self.flag2_dcazfs());
+        try b.int64(self.dcahurba);
+        try b.int64(self.dcaharba);
+        try b.int64(self.dcanlr);
+        try b.int64(self.dcadlr);
+        try b.int64(self.dcainr);
+        try b.int64(self.dcaupr);
+        try b.int64(self.dcartr);
+        try b.int64(self.dcaasp);
+        try b.int64(self.dcacis);
+        try b.int64(self.dcacas);
+        try b.int64(self.dcaexc);
+        try b.int64(self.dcarkp);
+        try b.int64(self.dcakln);
+        try b.int64(self.dcahurbc);
+        try b.int64(self.dcaharbc);
+        try b.int(self.dcacisz);
+        try b.int(self.dcacaci);
         var dcatrdt_str: [10]u8 = .{0} ** 10;
         try util.dcdate(&dcatrdt_str, &self.dcatrdt);
-        try db.bindText(stmt, 35, &dcatrdt_str);
+        try b.text(&dcatrdt_str);
     }
 };
 
