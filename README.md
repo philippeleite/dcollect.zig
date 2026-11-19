@@ -70,6 +70,7 @@ Current tables created by the importer:
 - `record_ag`
 - `record_dr`
 - `record_lb`
+- `record_cn`
 
 > Note: these tables are recreated during import (`DROP TABLE IF EXISTS ...`), so re-running the tool on the same database path replaces previous imported data.
 
@@ -94,7 +95,15 @@ UNION ALL SELECT 'MC', COUNT(*) FROM record_mc
 UNION ALL SELECT 'SG', COUNT(*) FROM record_sg
 UNION ALL SELECT 'BC', COUNT(*) FROM record_bc
 UNION ALL SELECT 'VL', COUNT(*) FROM record_vl
-UNION ALL SELECT 'AI', COUNT(*) FROM record_ai;
+UNION ALL SELECT 'AI', COUNT(*) FROM record_ai
+UNION ALL SELECT 'M',  COUNT(*) FROM record_m
+UNION ALL SELECT 'B',  COUNT(*) FROM record_b
+UNION ALL SELECT 'C',  COUNT(*) FROM record_c
+UNION ALL SELECT 'T',  COUNT(*) FROM record_t
+UNION ALL SELECT 'AG', COUNT(*) FROM record_ag
+UNION ALL SELECT 'DR', COUNT(*) FROM record_dr
+UNION ALL SELECT 'LB', COUNT(*) FROM record_lb
+UNION ALL SELECT 'CN', COUNT(*) FROM record_cn;
 ```
 
 ### Data sets (D, A)
@@ -215,6 +224,7 @@ Repeating groups are stored as JSON arrays and can be queried with SQLite's buil
 | `record_ag` | `dagdsnms` (array of `{"dsn": ..., "member": ...}` objects, defined entries only) |
 | `record_dr` | `ddrsout`, `ddrcfcs`, `ddrreqst`, `ddrcurst`                                 |
 | `record_lb` | `dlbsout`, `dlbcfcs`, `dlbreqst`, `dlbcurst`                                 |
+| `record_cn` | `dcnsesnm` (defined SES cache names only)                                    |
 
 The per-system arrays are positional: element N of `dsgsysst` (SG) or `dvlstsms` (VL) is the status on the system named in element N of `dbcsysnm` (BC). The 8-element arrays (`dsgstat`, `dvlsmss`, ...) line up with `dbcfsysn` the same way. Status values: SMS `1` = enabled, `2` = quiesced/all, `3` = quiesced/new, `4` = disabled/all, `5` = disabled/new. MVS `1` = online, `2` = offline, `3` = pending offline, `4` = boxed, `5` = not ready. OAM (DR, LB) `0` = no connectivity, `1` = online, `2` = offline, `3` = no outstanding request, `4` = library pending offline (LB only).
 
@@ -281,7 +291,7 @@ LIMIT 5;
 | AG   | Aggregate Group Information                     |    ✅ ¹     |
 | DR   | OAM Drive Record Information                    |    ✅ ¹     |
 | LB   | OAM Library Record Information                  |    ✅ ¹     |
-| CN   | Cache Names from Base Configuration Information |     ❌      |
+| CN   | Cache Names from Base Configuration Information |    ✅ ¹     |
 | AI   | Accounting Information from ACS Routines        |     ✅      |
 
 ¹ Implemented from the IBM documentation and covered by synthetic-record tests, but not yet validated against a real DCOLLECT file. Reports of mismatches are welcome.

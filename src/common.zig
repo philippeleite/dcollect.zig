@@ -18,8 +18,9 @@ const T = @import("recordT.zig");
 const AG = @import("recordAG.zig");
 const DR = @import("recordDR.zig");
 const LB = @import("recordLB.zig");
+const CN = @import("recordCN.zig");
 
-const record_modules = .{ D, A, V, DC, SC, MC, SG, BC, VL, AI, M, B, C, T, AG, DR, LB };
+const record_modules = .{ D, A, V, DC, SC, MC, SG, BC, VL, AI, M, B, C, T, AG, DR, LB, CN };
 
 pub const Context = struct {
     dcollect_file: []const u8 = undefined,
