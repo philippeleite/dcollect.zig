@@ -61,6 +61,7 @@ Current tables created by the importer:
 - `record_mc`
 - `record_sg`
 - `record_bc`
+- `record_vl`
 
 > Note: these tables are recreated during import (`DROP TABLE IF EXISTS ...`), so re-running the tool on the same database path replaces previous imported data.
 
@@ -99,7 +100,7 @@ LIMIT 20;
 | MC   | Management Class Construct Information          |     ✅      |
 | BC   | Base Configuration Information                  |     ✅      |
 | SG   | Storage Group Construct Information             |     ✅      |
-| VL   | Storage Group Volume Information                |     ❌      |
+| VL   | Storage Group Volume Information                |     ✅      |
 | AG   | Aggregate Group Information                     |     ❌      |
 | DR   | OAM Drive Record Information                    |     ❌      |
 | LB   | OAM Library Record Information                  |     ❌      |
