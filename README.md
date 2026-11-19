@@ -66,6 +66,7 @@ Current tables created by the importer:
 - `record_m`
 - `record_b`
 - `record_c`
+- `record_t`
 
 > Note: these tables are recreated during import (`DROP TABLE IF EXISTS ...`), so re-running the tool on the same database path replaces previous imported data.
 
@@ -264,7 +265,7 @@ LIMIT 5;
 | M    | Migrated Data Set Information                   |    ✅ ¹     |
 | B    | Backup Data Set Information                     |    ✅ ¹     |
 | C    | DASD Capacity Planning Information              |    ✅ ¹     |
-| T    | Tape Capacity Planning Information              |     ❌      |
+| T    | Tape Capacity Planning Information              |    ✅ ¹     |
 | DC   | Data Class Construct Information                |     ✅      |
 | SC   | Storage Class Construct Information             |     ✅      |
 | MC   | Management Class Construct Information          |     ✅      |
