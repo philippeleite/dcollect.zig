@@ -365,11 +365,9 @@ pub const RecordD = extern struct {
         try b.text(&self.dcddsser);
         try b.int(self.dcdvolsq);
 
-        var dcdlbkdt1: [10]u8 = @splat(0);
-        var dcdlbkdt2: [12]u8 = @splat(0);
-        try util.dcdate(&dcdlbkdt1, self.dcdlbkdt[0..4]);
-        try util.smftime(&dcdlbkdt2, self.dcdlbkdt[4..8]);
-        try b.text(&dcdlbkdt1 ++ " " ++ &dcdlbkdt2);
+        // DCDLBKDT is an 8-byte STCK (TOD clock), not packed date + binary time.
+        var dcdlbkdt_str: [23]u8 = undefined;
+        try b.text(try util.stckTimestamp(&dcdlbkdt_str, &self.dcdlbkdt));
 
         util.bcd2asc(&self.dcdatcl);
         try b.text(&self.dcdatcl);
@@ -429,4 +427,18 @@ pub const process = common.genericProcess(@This());
 test "record size" {
     std.debug.print("RecordD size: {d}\n", .{@sizeOf(RecordD)});
     try std.testing.expect(@sizeOf(RecordD) == 468);
+}
+
+test "DCDLBKDT is decoded as an STCK timestamp" {
+    var t: common.TestHarness = undefined;
+    try t.init();
+    defer t.deinit();
+
+    var rec: [468]u8 = @splat(0);
+    std.mem.writeInt(u16, rec[0..2], rec.len, .big);
+    common.TestHarness.putEbcdic(rec[4..6], "D ");
+    const off = @offsetOf(RecordD, "dcdlbkdt");
+    @memcpy(rec[off .. off + 8], &[_]u8{ 0xDE, 0xB9, 0x4C, 0x56, 0x70, 0x60, 0x80, 0x00 }); // 2024-02-29 12:34:56.789
+    try common.processRecord(&t.ctx, &rec);
+    try std.testing.expectEqualStrings("2024-02-29 12:34:56.789", try t.queryText("SELECT dcdlbkdt FROM record_d"));
 }
