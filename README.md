@@ -62,6 +62,7 @@ Current tables created by the importer:
 - `record_sg`
 - `record_bc`
 - `record_vl`
+- `record_ai`
 
 > Note: these tables are recreated during import (`DROP TABLE IF EXISTS ...`), so re-running the tool on the same database path replaces previous imported data.
 
@@ -105,7 +106,7 @@ LIMIT 20;
 | DR   | OAM Drive Record Information                    |     ❌      |
 | LB   | OAM Library Record Information                  |     ❌      |
 | CN   | Cache Names from Base Configuration Information |     ❌      |
-| AI   | Accounting Information from ACS Routines        |     ❌      |
+| AI   | Accounting Information from ACS Routines        |     ✅      |
 
 ## Notes
 

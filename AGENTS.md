@@ -32,7 +32,7 @@ The first build/test is slow (~1 min): it compiles `sqlite3.c` and runs `transla
 src/main.zig      entry point: ArgParser, FileParser (record loop), counters output, end-to-end test
 src/common.zig    Context, Database (SQLite wrapper), Binder, Header, record routing, genericProcess
 src/util.zig      EBCDIC<->ASCII tables (bcd2asc/asc2bcd), packed-date/time decoders, bitFlag, commaInt
-src/recordX.zig   one file per DCOLLECT record type (D, A, V, DC, SC, MC, SG, BC, VL)
+src/recordX.zig   one file per DCOLLECT record type (D, A, V, DC, SC, MC, SG, BC, VL, AI)
 lib/sqlite/       vendored SQLite amalgamation (compiled with custom -D flags in build.zig)
 testdata/         git-ignored; holds the local sample file `testdata/DCOLLECT`
 .github/workflows/release.yml   builds Windows/Linux/macOS zips on `v*` tags
