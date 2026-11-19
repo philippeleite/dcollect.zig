@@ -60,6 +60,7 @@ Current tables created by the importer:
 - `record_sc`
 - `record_mc`
 - `record_sg`
+- `record_bc`
 
 > Note: these tables are recreated during import (`DROP TABLE IF EXISTS ...`), so re-running the tool on the same database path replaces previous imported data.
 
@@ -96,7 +97,7 @@ LIMIT 20;
 | DC   | Data Class Construct Information                |     ✅      |
 | SC   | Storage Class Construct Information             |     ✅      |
 | MC   | Management Class Construct Information          |     ✅      |
-| BC   | Base Configuration Information                  |     ❌      |
+| BC   | Base Configuration Information                  |     ✅      |
 | SG   | Storage Group Construct Information             |     ✅      |
 | VL   | Storage Group Volume Information                |     ❌      |
 | AG   | Aggregate Group Information                     |     ❌      |

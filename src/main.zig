@@ -180,4 +180,5 @@ test "parseFile processes testdata/DCOLLECT and produces expected row counts" {
     try std.testing.expectEqual(@as(usize, 13), ctx.count.get("SC").?);
     try std.testing.expectEqual(@as(usize, 2), ctx.count.get("MC").?);
     try std.testing.expectEqual(@as(usize, 11), ctx.count.get("SG").?);
+    try std.testing.expectEqual(@as(usize, 1), ctx.count.get("BC").?);
 }
