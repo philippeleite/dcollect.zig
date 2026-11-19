@@ -32,7 +32,7 @@ The first build/test is slow (~1 min): it compiles `sqlite3.c` and runs `transla
 src/main.zig      entry point: ArgParser, FileParser (record loop), counters output, end-to-end test
 src/common.zig    Context, Database (SQLite wrapper), Binder, Header, record routing, genericProcess
 src/util.zig      EBCDIC<->ASCII tables (bcd2asc/asc2bcd), packed-date/time decoders, bitFlag, commaInt
-src/recordX.zig   one file per DCOLLECT record type (D, A, V, DC, SC, MC)
+src/recordX.zig   one file per DCOLLECT record type (D, A, V, DC, SC, MC, SG)
 lib/sqlite/       vendored SQLite amalgamation (compiled with custom -D flags in build.zig)
 testdata/         git-ignored; holds the local sample file `testdata/DCOLLECT`
 .github/workflows/release.yml   builds Windows/Linux/macOS zips on `v*` tags
@@ -61,7 +61,9 @@ Copy an existing `src/recordX.zig` and follow the same shape:
 ## Conventions & gotchas
 
 - Byte-level data is big-endian and EBCDIC. Conversions happen **in place** on the record buffer.
-- Text columns are bound with their full fixed width (trailing spaces are kept).
+- Text columns are bound with their full fixed width (trailing spaces are kept). Fields that may be X'00'-filled when unset are trimmed with `util.trimPad`.
+- Repeating groups (e.g. `DSGSSTAT(32)` in SG) are stored as one TEXT column holding a JSON array built with `util.jsonArray`; query them with `json_each()`. Pass integer arrays as `u16`/wider, since `[N]u8` serializes as a string.
+- When the struct has 4-byte fields but the documented length is not a multiple of 4, mark those fields `align(1)` so `@sizeOf` matches the IBM length (see MC, SG).
 - Errors: return Zig errors and log with `std.log.err`; `main` prints the error name and exits with code 1.
 - Stdout goes through `Context.print`. In tests, set `ctx.stdout_override` to a discarding writer, because under `zig build test` stdout is reserved for the build runner protocol.
 - Tests are inline `test` blocks next to the code; there is no separate test directory. The end-to-end test in `main.zig` needs `testdata/DCOLLECT` (git-ignored, local only) and uses `:memory:` as the database.

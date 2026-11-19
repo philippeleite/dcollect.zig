@@ -276,6 +276,27 @@ test "commaInt" {
     try std.testing.expectEqualStrings("18,446,744,073,709,551,615", commaInt(&buffer, 18_446_744_073_709_551_615));
 }
 
+/// Serializes `items` (a slice/array of strings or integers) as a JSON array into `buf`.
+/// Pass integers wider than u8: `[N]u8` would be written as a JSON string.
+pub fn jsonArray(buf: []u8, items: anytype) ![]const u8 {
+    var w: std.Io.Writer = .fixed(buf);
+    try std.json.Stringify.value(items, .{}, &w);
+    return w.buffered();
+}
+
+test "jsonArray" {
+    var buf: [64]u8 = undefined;
+    const names = [_][]const u8{ "A\"B", "" };
+    try std.testing.expectEqualStrings("[\"A\\\"B\",\"\"]", try jsonArray(&buf, names));
+    const nums = [_]u16{ 1, 0, 3 };
+    try std.testing.expectEqualStrings("[1,0,3]", try jsonArray(&buf, nums));
+}
+
+/// Trims trailing blanks and X'00' padding from an already-ASCII field.
+pub fn trimPad(s: []const u8) []const u8 {
+    return std.mem.trimEnd(u8, s, " \x00");
+}
+
 pub fn bitFlag(comptime Self: type, comptime field: []const u8, comptime mask: u8) fn (*Self) bool {
     return struct {
         fn f(self: *Self) bool {
