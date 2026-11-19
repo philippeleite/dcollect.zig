@@ -89,7 +89,14 @@ pub const Binder = struct {
 };
 
 fn placeholderCount(comptime sql: []const u8) comptime_int {
-    return std.mem.count(u8, sql, "?");
+    // Plain loop instead of std.mem.count: its SIMD path is target-dependent and blew the
+    // default comptime branch quota on aarch64 for the long D insertSQL.
+    @setEvalBranchQuota(10 * sql.len + 1000);
+    var n: comptime_int = 0;
+    for (sql) |ch| {
+        if (ch == '?') n += 1;
+    }
+    return n;
 }
 
 pub const Database = struct {
@@ -186,8 +193,15 @@ pub const Database = struct {
         }
     }
 
+    // SQLITE_TRANSIENT is ((sqlite3_destructor_type)-1). The translated constant is a function
+    // pointer with address -1, which Zig rejects on aarch64 (function pointers must be aligned).
+    // Declaring the destructor parameter as a pointer-sized integer passes the same -1 with the
+    // same C ABI, telling SQLite to copy the text (our buffers are short-lived).
+    extern fn sqlite3_bind_text(stmt: Stmt, index: c_int, text: [*]const u8, n: c_int, destructor: isize) c_int;
+    const sqlite_transient: isize = -1;
+
     pub fn bindText(self: *Database, stmt: Stmt, index: c_int, text: []const u8) !void {
-        if (c.SQLITE_OK != c.sqlite3_bind_text(stmt, index, text.ptr, @intCast(text.len), c.SQLITE_TRANSIENT)) {
+        if (c.SQLITE_OK != sqlite3_bind_text(stmt, index, text.ptr, @intCast(text.len), sqlite_transient)) {
             std.log.err("Can't bind text at index {d}: {s}\n", .{ index, c.sqlite3_errmsg(self.db) });
             return error.bindText;
         }
