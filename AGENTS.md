@@ -41,8 +41,8 @@ testdata/         git-ignored; holds the local sample file `testdata/DCOLLECT`
 ## How parsing works
 
 1. `FileParser.parseFile` reads the file through a 4 KiB `std.Io.Reader`: peeks a big-endian `u16` record length, then `take(reclen)` for the full record.
-2. `common.processRecord` converts bytes `[4..6]` (record type) from EBCDIC in place and looks it up in a comptime `StaticStringMap` built from `record_modules`. Unknown types go to a no-op (they still count toward the commit batch, but not the per-type counters).
-3. `genericProcess(m)` casts the bytes to `m.Record` (an `extern struct`), runs `std.mem.byteSwapAllFields` (big-endian → native), and calls `rec.bind(&binder)`. A debug assert checks that the number of bound values equals the number of `?` in `insertSQL`.
+2. `common.processRecord` rejects records shorter than the 24-byte header (`error.InvalidRecordLength`), converts bytes `[4..6]` (record type) from EBCDIC in place and looks it up in a comptime `StaticStringMap` built from `record_modules`. Unknown types go to a no-op (they still count toward the commit batch, but not the per-type counters).
+3. `genericProcess(m)` copies the record into a zeroed, aligned local `m.Record` (an `extern struct`): shorter records get a zeroed tail, longer ones are truncated to the known fields. It then runs `std.mem.byteSwapAllFields` (big-endian → native) and calls `rec.bind(&binder)`. A debug assert checks that the number of bound values equals the number of `?` in `insertSQL`.
 4. Inserts run in transactions committed every 5000 records (`Database.COMMIT_THRESHOLD`); the final commit happens in `Database.deinit`.
 5. On startup `Database.init` runs each record's `tableSQL`, which **drops and recreates** the table.
 
@@ -70,3 +70,24 @@ Copy an existing `src/recordX.zig` and follow the same shape:
 - Tests are inline `test` blocks next to the code; there is no separate test directory. The end-to-end test in `main.zig` needs `testdata/DCOLLECT` (git-ignored, local only) and uses `:memory:` as the database.
 - The `record size` tests print with `std.debug.print`, so `zig build test` shows extra stderr output (and may show a "failed command" line) even when all tests pass. Check the `N/N tests passed` summary.
 - SQLite is built with `SQLITE_THREADSAFE=0`, synchronous off and an in-memory journal. That is fine for this single-writer bulk loader; do not add threads that share the connection.
+- Do not use `c.SQLITE_TRANSIENT`: translate-c makes it a function pointer with address -1, which fails to compile on aarch64. `Database.bindText` uses a local `sqlite3_bind_text` extern that takes the destructor as `isize` (-1). Likewise keep comptime work over long strings (e.g. `placeholderCount`) as plain loops with `@setEvalBranchQuota`; `std.mem` SIMD helpers hit the comptime branch quota on aarch64 only.
+
+## Release process
+
+Releases are built and published by `.github/workflows/release.yml` when a tag matching `v*` is pushed. It sets up Zig (pinned version in the workflow), cross-compiles with `-Doptimize=ReleaseSafe -Dstrip=true -Dsingle-threaded=true` for `x86_64-windows` (`-Dcpu=skylake`), `x86_64-linux-gnu` (`-Dcpu=skylake`) and `aarch64-macos` (`-Dcpu=apple_m1`), zips each binary (`dcollect-<target>.zip`) and creates the GitHub release with auto-generated notes.
+
+1. Make sure `main` is clean and `zig build test --summary all` passes.
+2. Reproduce all three workflow builds locally before tagging; a failure here would otherwise only show up after the tag is pushed (0.3.0 needed an aarch64-only fix):
+   ```sh
+   for t in "x86_64-windows skylake" "x86_64-linux-gnu skylake" "aarch64-macos apple_m1"; do
+     set -- $t
+     zig build -Doptimize=ReleaseSafe -Dstrip=true -Dsingle-threaded=true -Dtarget=$1 -Dcpu=$2 -p zig-out/rel-$1
+   done
+   ```
+   Optionally run the native binary on `testdata/DCOLLECT` and compare with a previous import.
+3. Bump `.version` in `build.zig.zon` (semver; `dcollect --version` reads it). If the minimum Zig version changes, update `minimum_zig_version`, the Zig version pinned in `release.yml` and the README requirement together.
+4. Commit as `Release X.Y.Z`, with a summary of the changes since the previous release in the body.
+5. Create an annotated tag on that commit: `git tag -a vX.Y.Z -m "dcollect X.Y.Z: <headline>"`.
+6. Push the branch, then the tag: `git push && git push origin vX.Y.Z`. Pushing the tag publishes a public release, so only do it when the user asks.
+7. Verify the run finished and the release has the three zips, e.g. via the public API (no `gh` needed):
+   `curl -s https://api.github.com/repos/philippeleite/dcollect.zig/actions/runs?per_page=1` and `.../releases/tags/vX.Y.Z`.
