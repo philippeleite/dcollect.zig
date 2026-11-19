@@ -57,6 +57,7 @@ Current tables created by the importer:
 - `record_a`
 - `record_v`
 - `record_dc`
+- `record_sc`
 
 > Note: these tables are recreated during import (`DROP TABLE IF EXISTS ...`), so re-running the tool on the same database path replaces previous imported data.
 
@@ -91,7 +92,7 @@ LIMIT 20;
 | C    | DASD Capacity Planning Information              |     ❌      |
 | T    | Tape Capacity Planning Information              |     ❌      |
 | DC   | Data Class Construct Information                |     ✅      |
-| SC   | Storage Class Construct Information             |     ❌      |
+| SC   | Storage Class Construct Information             |     ✅      |
 | MC   | Management Class Construct Information          |     ❌      |
 | BC   | Base Configuration Information                  |     ❌      |
 | SG   | Storage Group Construct Information             |     ❌      |

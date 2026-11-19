@@ -5,8 +5,9 @@ const D = @import("recordD.zig");
 const A = @import("recordA.zig");
 const V = @import("recordV.zig");
 const DC = @import("recordDC.zig");
+const SC = @import("recordSC.zig");
 
-const record_modules = .{ D, A, V, DC };
+const record_modules = .{ D, A, V, DC, SC };
 
 pub const Context = struct {
     dcollect_file: []const u8 = undefined,
