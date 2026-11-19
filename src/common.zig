@@ -231,6 +231,8 @@ const routeFn = blk: {
 fn dummyProcess(_: *Context, _: []u8) anyerror!void {}
 
 pub fn processRecord(ctx: *Context, record: []u8) !void {
+    // A length below the header size means a corrupt file (and 0 would never advance the reader).
+    if (record.len < @sizeOf(Header)) return error.InvalidRecordLength;
     util.bcd2asc(record[4..6]);
     const rec_type = record[4..6];
     const proc_fn = routeFn.get(rec_type) orelse dummyProcess;
@@ -252,7 +254,13 @@ pub fn genericProcess(comptime m: type) procFn {
     const expected_columns = comptime placeholderCount(m.Record.insertSQL);
     return struct {
         fn process(ctx: *Context, record: []u8) anyerror!void {
-            var rec: *m.Record = @ptrCast(@alignCast(record[0..@sizeOf(m.Record)]));
+            // Copy into an aligned, zeroed struct: the record slice has no alignment guarantee,
+            // and records shorter than the struct (older releases) get their missing tail zeroed.
+            // Longer records (newer releases) are truncated to the fields we know.
+            var rec_buf: m.Record = std.mem.zeroes(m.Record);
+            const n = @min(record.len, @sizeOf(m.Record));
+            @memcpy(std.mem.asBytes(&rec_buf)[0..n], record[0..n]);
+            const rec = &rec_buf;
             std.mem.byteSwapAllFields(m.Record, rec);
             const stmt = ctx.db.stmts[idx];
             var binder = Binder{ .db = &ctx.db, .stmt = stmt };
@@ -269,4 +277,39 @@ pub fn genericProcess(comptime m: type) procFn {
             }
         }
     }.process;
+}
+
+test "processRecord copes with short, misaligned records and rejects tiny ones" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    var init: std.process.Init = undefined;
+    init.arena = &arena;
+    init.gpa = std.testing.allocator;
+    init.io = std.testing.io;
+    var ctx = Context.init(init);
+    defer ctx.deinit();
+    ctx.db = try Database.init(arena.allocator(), ":memory:");
+    defer ctx.db.deinit();
+
+    // 33-byte SC record (real ones are 280 bytes) starting at an odd address.
+    var storage: [34]u8 align(4) = @splat(0);
+    const record = storage[1..];
+    std.mem.writeInt(u16, record[0..2], record.len, .big);
+    record[4] = 0xE2; // 'S' in EBCDIC
+    record[5] = 0xC3; // 'C'
+    std.mem.writeInt(u16, record[24..26], 3, .big); // DSCNMLEN
+    @memcpy(record[26..29], &[_]u8{ 0xC1, 0xC2, 0xC3 }); // "ABC"
+    try processRecord(&ctx, record);
+    try std.testing.expectEqual(1, ctx.count.get("SC").?);
+
+    var stmt: ?Stmt = null;
+    try std.testing.expectEqual(c.SQLITE_OK, c.sqlite3_prepare_v2(ctx.db.db, "SELECT dscname, dsciacdl FROM record_sc", -1, &stmt, null));
+    defer _ = c.sqlite3_finalize(stmt);
+    try std.testing.expectEqual(c.SQLITE_ROW, c.sqlite3_step(stmt));
+    try std.testing.expectEqualStrings("ABC", std.mem.span(c.sqlite3_column_text(stmt, 0)));
+    try std.testing.expectEqual(0, c.sqlite3_column_int(stmt, 1)); // missing tail is zeroed
+
+    var tiny: [10]u8 = @splat(0);
+    try std.testing.expectError(error.InvalidRecordLength, processRecord(&ctx, &tiny));
+    try std.testing.expectError(error.InvalidRecordLength, processRecord(&ctx, tiny[0..0]));
 }
