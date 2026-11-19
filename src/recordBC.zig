@@ -97,12 +97,6 @@ pub const RecordBC = extern struct {
 
     pub const flgdc_dbc32nam = util.bitFlag(RecordBC, "dbcflgdc", 0x80);
 
-    /// EBCDIC field -> ASCII with trailing blank/X'00' padding removed.
-    fn ascii(field: []u8) []const u8 {
-        util.bcd2asc(field);
-        return util.trimPad(field);
-    }
-
     pub inline fn bind(self: *RecordBC, b: *common.Binder) !void {
         // 32 names of up to 8 chars; sized for worst-case JSON escaping (\u00XX per byte).
         var json_buf: [2048]u8 = undefined;
@@ -117,19 +111,19 @@ pub const RecordBC = extern struct {
         try b.text(&self.dbcdesc);
         try b.boolean(self.flgdc_dbc32nam());
         // Length comes from the input file; clamp so a corrupt record can't slice out of bounds.
-        try b.text(ascii(self.dbcmcnam[0..@min(self.dbcmclen, self.dbcmcnam.len)]));
+        try b.text(util.ascii(self.dbcmcnam[0..@min(self.dbcmclen, self.dbcmcnam.len)]));
         try b.int(self.dbctrksz);
         try b.int(self.dbccylcp);
-        try b.text(ascii(&self.dbcdunit));
+        try b.text(util.ascii(&self.dbcdunit));
         // SMS resource status token is binary.
         try b.text(&std.fmt.bytesToHex(self.dbcsrst, .upper));
         try b.int(self.dbcstat);
 
         var names8: [8][]const u8 = undefined;
-        for (&names8, &self.dbcfsysn) |*out, *n| out.* = ascii(n);
+        for (&names8, &self.dbcfsysn) |*out, *n| out.* = util.ascii(n);
         try b.text(try util.jsonArray(&json_buf, names8));
 
-        try b.text(ascii(&self.dbcscdsn));
+        try b.text(util.ascii(&self.dbcscdsn));
 
         var nums8: [8]u16 = undefined;
         for (&nums8, self.dbcsfeat) |*out, f| out.* = std.mem.readInt(u16, &f, .big);
@@ -138,7 +132,7 @@ pub const RecordBC = extern struct {
         try b.text(try util.jsonArray(&json_buf, nums8));
 
         var names32: [32][]const u8 = undefined;
-        for (&names32, &self.dbcsysdt) |*out, *s| out.* = ascii(&s.dbcsysnm);
+        for (&names32, &self.dbcsysdt) |*out, *s| out.* = util.ascii(&s.dbcsysnm);
         try b.text(try util.jsonArray(&json_buf, names32));
         var nums32: [32]u16 = undefined;
         for (&nums32, self.dbcsysdt) |*out, s| out.* = std.mem.readInt(u16, &s.dbcsysft, .big);
@@ -146,7 +140,7 @@ pub const RecordBC = extern struct {
         for (&nums32, self.dbcsysdt) |*out, s| out.* = s.dbcsnmty;
         try b.text(try util.jsonArray(&json_buf, nums32));
 
-        try b.text(ascii(self.dbcsepnm[0..@min(self.dbcsepnl, self.dbcsepnm.len)]));
+        try b.text(util.ascii(self.dbcsepnm[0..@min(self.dbcsepnl, self.dbcsepnm.len)]));
     }
 };
 

@@ -331,6 +331,12 @@ test "pdtime" {
     try std.testing.expectEqualStrings("13:45:25.07", try pdtime(&buf, &.{ 0x13, 0x45, 0x25, 0x07 }));
 }
 
+/// Converts an EBCDIC field to ASCII in place and returns it without trailing blank/X'00' padding.
+pub fn ascii(field: []u8) []const u8 {
+    bcd2asc(field);
+    return trimPad(field);
+}
+
 /// Trims trailing blanks and X'00' padding from an already-ASCII field.
 pub fn trimPad(s: []const u8) []const u8 {
     return std.mem.trimEnd(u8, s, " \x00");

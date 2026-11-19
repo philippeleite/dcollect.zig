@@ -178,12 +178,6 @@ pub const RecordSG = extern struct {
     pub const dflag2_dsgexnmf = util.bitFlag(RecordSG, "dsgdflag2", 0x40);
     pub const dflag2_dsgeavbp = util.bitFlag(RecordSG, "dsgdflag2", 0x10);
 
-    /// EBCDIC field -> ASCII with trailing blank/X'00' padding removed.
-    fn ascii(field: []u8) []const u8 {
-        util.bcd2asc(field);
-        return util.trimPad(field);
-    }
-
     pub inline fn bind(self: *RecordSG, b: *common.Binder) !void {
         var json_buf: [512]u8 = undefined;
 
@@ -203,25 +197,25 @@ pub const RecordSG = extern struct {
         try b.int(self.dsgfhthr);
         try b.int(self.dsgflthr);
         try b.int(self.dsgfvmax);
-        try b.text(ascii(&self.dsgfvunt));
+        try b.text(util.ascii(&self.dsgfvunt));
 
         var dmpcl: [5][]const u8 = undefined;
-        for (&dmpcl, &self.dsgdmpcl) |*out, *cls| out.* = ascii(cls);
+        for (&dmpcl, &self.dsgdmpcl) |*out, *cls| out.* = util.ascii(cls);
         try b.text(try util.jsonArray(&json_buf, dmpcl));
 
         var stat: [8]u16 = undefined;
         for (&stat, self.dsgfprst) |*out, v| out.* = v;
         try b.text(try util.jsonArray(&json_buf, stat));
 
-        try b.text(ascii(&self.dsgabsys));
-        try b.text(ascii(&self.dsgadsys));
-        try b.text(ascii(&self.dsgamsys));
+        try b.text(util.ascii(&self.dsgabsys));
+        try b.text(util.ascii(&self.dsgadsys));
+        try b.text(util.ascii(&self.dsgamsys));
 
         for (&stat, self.dsgcnfrm) |*out, v| out.* = v;
         try b.text(try util.jsonArray(&json_buf, stat));
 
         try b.int(self.dsggbkuf);
-        try b.text(ascii(&self.dsgtblgr));
+        try b.text(util.ascii(&self.dsgtblgr));
         try b.boolean(self.oamfl_dsgfcys());
         try b.boolean(self.oamfl_dsgfvlft());
         try b.boolean(self.oamfl_dsgfdrst());
@@ -240,7 +234,7 @@ pub const RecordSG = extern struct {
         for (&self.dsgolibs) |*lib| {
             const len = @min(lib.dsgolbnl, lib.dsgolbnm.len);
             if (len == 0) continue;
-            libs[nlibs] = ascii(lib.dsgolbnm[0..len]);
+            libs[nlibs] = util.ascii(lib.dsgolbnm[0..len]);
             nlibs += 1;
         }
         try b.text(try util.jsonArray(&json_buf, libs[0..nlibs]));
@@ -252,7 +246,7 @@ pub const RecordSG = extern struct {
         try b.text(try util.jsonArray(&json_buf, sysst));
 
         try b.int(self.dsgoflow);
-        try b.text(ascii(self.dsgexnm[0..@min(self.dsgexnln, self.dsgexnm.len)]));
+        try b.text(util.ascii(self.dsgexnm[0..@min(self.dsgexnln, self.dsgexnm.len)]));
         try b.boolean(self.dflag2_dsgflowf());
         try b.boolean(self.dflag2_dsgexnmf());
         try b.boolean(self.dflag2_dsgeavbp());
@@ -261,7 +255,7 @@ pub const RecordSG = extern struct {
         try b.int(self.dsgslthr);
         try b.int(self.dsgtotap);
         try b.int(self.dsgtmsap);
-        try b.text(ascii(&self.dsgoamid));
+        try b.text(util.ascii(&self.dsgoamid));
     }
 };
 

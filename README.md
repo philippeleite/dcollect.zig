@@ -64,6 +64,7 @@ Current tables created by the importer:
 - `record_vl`
 - `record_ai`
 - `record_m`
+- `record_b`
 
 > Note: these tables are recreated during import (`DROP TABLE IF EXISTS ...`), so re-running the tool on the same database path replaces previous imported data.
 
@@ -260,7 +261,7 @@ LIMIT 5;
 | A    | VSAM Association Information                    |     ✅      |
 | V    | Volume Information                              |     ✅      |
 | M    | Migrated Data Set Information                   |    ✅ ¹     |
-| B    | Backup Data Set Information                     |     ❌      |
+| B    | Backup Data Set Information                     |    ✅ ¹     |
 | C    | DASD Capacity Planning Information              |     ❌      |
 | T    | Tape Capacity Planning Information              |     ❌      |
 | DC   | Data Class Construct Information                |     ✅      |

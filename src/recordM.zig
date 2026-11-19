@@ -194,12 +194,6 @@ pub const RecordM = extern struct {
         return if (in_mb) @as(i64, value) * 1024 else value;
     }
 
-    /// EBCDIC field -> ASCII with trailing blank/X'00' padding removed.
-    fn ascii(field: []u8) []const u8 {
-        util.bcd2asc(field);
-        return util.trimPad(field);
-    }
-
     fn date(b: *common.Binder, field: *const [4]u8) !void {
         var buf: [10]u8 = undefined;
         try util.dcdate(&buf, field);
@@ -207,11 +201,11 @@ pub const RecordM = extern struct {
     }
 
     pub inline fn bind(self: *RecordM, b: *common.Binder) !void {
-        try b.text(ascii(&self.umdsnam));
+        try b.text(util.ascii(&self.umdsnam));
         try b.int(self.umflag1[0] >> 6); // UMLEVEL: 0 = L0, 1 = ML1, 2 = ML2
         try b.boolean(self.flag1_umchind());
         try b.boolean(self.flag1_umsdsp());
-        try b.text(ascii(&self.umdevcl)); // 'D' = DASD, 'T' = tape
+        try b.text(util.ascii(&self.umdevcl)); // 'D' = DASD, 'T' = tape
         try b.boolean(self.dsorg_umdsgis());
         try b.boolean(self.dsorg_umdsgps());
         try b.boolean(self.dsorg_umdsgda());
@@ -224,9 +218,9 @@ pub const RecordM = extern struct {
         var time_buf: [11]u8 = undefined;
         try b.text(try util.pdtime(&time_buf, &self.umtime));
         // Lengths come from the input file; clamp so a corrupt record can't slice out of bounds.
-        try b.text(ascii(self.umdatcl[0..@min(self.umdclng, self.umdatcl.len)]));
-        try b.text(ascii(self.umstgcl[0..@min(self.umsclng, self.umstgcl.len)]));
-        try b.text(ascii(self.ummgtcl[0..@min(self.ummclng, self.ummgtcl.len)]));
+        try b.text(util.ascii(self.umdatcl[0..@min(self.umdclng, self.umdatcl.len)]));
+        try b.text(util.ascii(self.umstgcl[0..@min(self.umsclng, self.umstgcl.len)]));
+        try b.text(util.ascii(self.ummgtcl[0..@min(self.ummclng, self.ummgtcl.len)]));
 
         const recfm: []const u8 = if (self.recrd_umrecff() and self.recrd_umrecfv())
             "U"
@@ -267,7 +261,7 @@ pub const RecordM = extern struct {
         try date(b, &self.umlrfdt);
         try b.int64(kb(self.um_user_datasize, self.flag4_um_fmb()));
         try b.int64(kb(self.um_comp_datasize, self.flag4_um_fmb()));
-        try b.text(ascii(&self.umfrvol));
+        try b.text(util.ascii(&self.umfrvol));
         try b.int64(std.mem.readInt(u32, &self.umlrecl, .big));
         try b.boolean(self.flag3_umempty());
         try b.boolean(self.flag3_um_ca_reclaim_elig());
@@ -277,14 +271,14 @@ pub const RecordM = extern struct {
         try b.boolean(self.flag3_um_json());
         try b.boolean(self.flag3_um_cld_comp());
         try b.boolean(self.flag3_um_cld_encrypt());
-        try b.text(ascii(self.um_cloud_name[0..@min(self.um_cloud_name_length, self.um_cloud_name.len)]));
-        try b.text(ascii(&self.um_container_name));
+        try b.text(util.ascii(self.um_cloud_name[0..@min(self.um_cloud_name_length, self.um_cloud_name.len)]));
+        try b.text(util.ascii(&self.um_container_name));
         try b.int(self.um_obj_number);
         try b.int(self.um_cld_comp_percent);
         try b.int(self.umencrpt);
         // X'FFFF' type / all-X'FF' label = not encrypted.
         const encrypted = self.umencrpt != 0xFFFF and self.umencrpl[0] != 0xFF;
-        try b.text(if (encrypted) ascii(&self.umencrpl) else "");
+        try b.text(if (encrypted) util.ascii(&self.umencrpl) else "");
     }
 };
 
@@ -319,12 +313,6 @@ test "field offsets match IBM layout" {
     try std.testing.expectEqual(418, @offsetOf(RecordM, "umencrpr"));
 }
 
-/// Writes ASCII text as EBCDIC into a record slice (test helper).
-fn putEbcdic(dst: []u8, text: []const u8) void {
-    @memcpy(dst[0..text.len], text);
-    util.asc2bcd(dst[0..text.len]);
-}
-
 test "synthetic M record is decoded into record_m" {
     var t: common.TestHarness = undefined;
     try t.init();
@@ -333,24 +321,24 @@ test "synthetic M record is decoded into record_m" {
     // Build a big-endian, EBCDIC record the way DFSMShsm would write it.
     var rec: [448]u8 = @splat(0);
     std.mem.writeInt(u16, rec[0..2], rec.len, .big);
-    putEbcdic(rec[4..6], "M ");
+    common.TestHarness.putEbcdic(rec[4..6], "M ");
     @memset(rec[24..68], 0x40); // EBCDIC blanks
-    putEbcdic(rec[24..68], "USER1.MIGRATED.DATA");
+    common.TestHarness.putEbcdic(rec[24..68], "USER1.MIGRATED.DATA");
     rec[68] = 0x80 | 0x20; // UMLEVEL = 2 (ML2), UMCHIND
-    putEbcdic(rec[69..70], "T");
+    common.TestHarness.putEbcdic(rec[69..70], "T");
     rec[70] = 0x40; // DSORG = PS
     std.mem.writeInt(i32, rec[72..76], 300, .big); // UMDSIZE (MB, see UMFLAG4)
     @memcpy(rec[76..80], &[_]u8{ 0x13, 0x45, 0x25, 0x07 }); // 13:45:25.07
     @memcpy(rec[80..84], &[_]u8{ 0x20, 0x24, 0x06, 0x0F }); // 2024 day 060 = 2024-02-29
     std.mem.writeInt(u16, rec[116..118], 6, .big);
-    putEbcdic(rec[118..124], "SCBASE");
+    common.TestHarness.putEbcdic(rec[118..124], "SCBASE");
     rec[180] = 0x80 | 0x10; // RECFM = FB
     std.mem.writeInt(u16, rec[182..184], 27920, .big); // UMBKLNG
     rec[184] = 0x08; // UMSMSM
     std.mem.writeInt(i16, rec[186..188], 3, .big); // UMNMIG
     std.mem.writeInt(i32, rec[188..192], 1500, .big); // UMALLSP (KB)
     @memcpy(rec[208..216], &[_]u8{ 0xDE, 0xB9, 0x4C, 0x56, 0x70, 0x60, 0x80, 0x00 }); // STCK 2024-02-29 12:34:56.789
-    putEbcdic(rec[228..234], "WORK01");
+    common.TestHarness.putEbcdic(rec[228..234], "WORK01");
     std.mem.writeInt(u32, rec[234..238], 80, .big); // UMLRECL
     rec[239] = 0x10; // UMDSIZE_FMB: UMDSIZE is in MB
     std.mem.writeInt(u16, rec[352..354], 0xFFFF, .big); // not encrypted

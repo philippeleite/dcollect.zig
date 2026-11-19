@@ -12,8 +12,9 @@ const BC = @import("recordBC.zig");
 const VL = @import("recordVL.zig");
 const AI = @import("recordAI.zig");
 const M = @import("recordM.zig");
+const B = @import("recordB.zig");
 
-const record_modules = .{ D, A, V, DC, SC, MC, SG, BC, VL, AI, M };
+const record_modules = .{ D, A, V, DC, SC, MC, SG, BC, VL, AI, M, B };
 
 pub const Context = struct {
     dcollect_file: []const u8 = undefined,
@@ -300,6 +301,12 @@ pub const TestHarness = struct {
         self.ctx.db.deinit();
         self.ctx.deinit();
         self.arena.deinit();
+    }
+
+    /// Writes ASCII text as EBCDIC into a record slice.
+    pub fn putEbcdic(dst: []u8, text: []const u8) void {
+        @memcpy(dst[0..text.len], text);
+        util.asc2bcd(dst[0..text.len]);
     }
 
     /// First column of the first row, as text (SQLite converts numbers).
