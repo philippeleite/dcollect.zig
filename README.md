@@ -67,6 +67,7 @@ Current tables created by the importer:
 - `record_b`
 - `record_c`
 - `record_t`
+- `record_ag`
 
 > Note: these tables are recreated during import (`DROP TABLE IF EXISTS ...`), so re-running the tool on the same database path replaces previous imported data.
 
@@ -209,6 +210,7 @@ Repeating groups are stored as JSON arrays and can be queried with SQLite's buil
 | `record_sg` | `dsgdmpcl`, `dsgstat`, `dsgcsmss`, `dsgolbnm`, `dsgsysst`, `dsgcnsms`        |
 | `record_bc` | `dbcfsysn`, `dbcsfeat`, `dbcsysnt`, `dbcsysnm`, `dbcsysft`, `dbcsnmty`       |
 | `record_vl` | `dvlsmss`, `dvlmvss`, `dvlcsmss`, `dvlstsms`, `dvlstmvs`, `dvlsrsms`, `dvlogsms` |
+| `record_ag` | `dagdsnms` (array of `{"dsn": ..., "member": ...}` objects, defined entries only) |
 
 The per-system arrays are positional: element N of `dsgsysst` (SG) or `dvlstsms` (VL) is the status on the system named in element N of `dbcsysnm` (BC). The 8-element arrays (`dsgstat`, `dvlsmss`, ...) line up with `dbcfsysn` the same way. Status values: SMS `1` = enabled, `2` = quiesced/all, `3` = quiesced/new, `4` = disabled/all, `5` = disabled/new. MVS `1` = online, `2` = offline, `3` = pending offline, `4` = boxed, `5` = not ready.
 
@@ -272,7 +274,7 @@ LIMIT 5;
 | BC   | Base Configuration Information                  |     ✅      |
 | SG   | Storage Group Construct Information             |     ✅      |
 | VL   | Storage Group Volume Information                |     ✅      |
-| AG   | Aggregate Group Information                     |     ❌      |
+| AG   | Aggregate Group Information                     |    ✅ ¹     |
 | DR   | OAM Drive Record Information                    |     ❌      |
 | LB   | OAM Library Record Information                  |     ❌      |
 | CN   | Cache Names from Base Configuration Information |     ❌      |
