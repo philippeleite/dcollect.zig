@@ -349,15 +349,15 @@ pub const RecordD = extern struct {
         try b.int(self.dcdscall);
         try b.int(self.dcdnmblk);
 
-        var dcdcredt_str: [10]u8 = .{0} ** 10;
+        var dcdcredt_str: [10]u8 = @splat(0);
         try util.dcdate(&dcdcredt_str, self.dcdcredt[0..]);
         try b.text(&dcdcredt_str);
 
-        var dcdexpdt_str: [10]u8 = .{0} ** 10;
+        var dcdexpdt_str: [10]u8 = @splat(0);
         try util.dcdate(&dcdexpdt_str, self.dcdexpdt[0..]);
         try b.text(&dcdexpdt_str);
 
-        var dcdlstrf_str: [10]u8 = .{0} ** 10;
+        var dcdlstrf_str: [10]u8 = @splat(0);
         try util.dcdate(&dcdlstrf_str, self.dcdlstrf[0..]);
         try b.text(&dcdlstrf_str);
 
@@ -365,8 +365,8 @@ pub const RecordD = extern struct {
         try b.text(&self.dcddsser);
         try b.int(self.dcdvolsq);
 
-        var dcdlbkdt1: [10]u8 = .{0} ** 10;
-        var dcdlbkdt2: [12]u8 = .{0} ** 12;
+        var dcdlbkdt1: [10]u8 = @splat(0);
+        var dcdlbkdt2: [12]u8 = @splat(0);
         try util.dcdate(&dcdlbkdt1, self.dcdlbkdt[0..4]);
         try util.smftime(&dcdlbkdt2, self.dcdlbkdt[4..8]);
         try b.text(&dcdlbkdt1 ++ " " ++ &dcdlbkdt2);
@@ -408,9 +408,10 @@ pub const RecordD = extern struct {
         try b.int(self.dcdctype);
         try b.int(self.dcdtype);
 
+        const blank_klbl: [64]u8 = @splat(' ');
         const dcdklbl = blk: {
             if (self.dcdtype == 0xFFFF) {
-                break :blk " " ** 64;
+                break :blk &blank_klbl;
             } else {
                 util.bcd2asc(&self.dcdklbl);
                 break :blk &self.dcdklbl;

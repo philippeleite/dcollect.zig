@@ -86,7 +86,7 @@ pub const Database = struct {
     const COMMIT_THRESHOLD: usize = 5000;
 
     pub fn init(allocator: std.mem.Allocator, db_path: []const u8) !Database {
-        const null_db = try allocator.dupeZ(u8, db_path);
+        const null_db = try allocator.dupeSentinel(u8, db_path, 0);
         defer allocator.free(null_db);
 
         const flags =

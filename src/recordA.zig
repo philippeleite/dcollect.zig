@@ -168,7 +168,7 @@ pub const RecordA = extern struct {
         try b.int64(self.dcaharbc);
         try b.int(self.dcacisz);
         try b.int(self.dcacaci);
-        var dcatrdt_str: [10]u8 = .{0} ** 10;
+        var dcatrdt_str: [10]u8 = @splat(0);
         try util.dcdate(&dcatrdt_str, &self.dcatrdt);
         try b.text(&dcatrdt_str);
     }

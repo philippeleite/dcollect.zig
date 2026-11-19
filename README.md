@@ -11,7 +11,7 @@
 
 ## Requirements
 
-- Zig `0.16.0` or newer
+- Zig `0.17.0` or newer
 - A DCOLLECT dataset file transferred in **binary mode** (for example, via FTP)
 
 ## Build
@@ -81,26 +81,26 @@ LIMIT 20;
 
 ## Implemented DCOLLECT record types
 
-| Type | Description | Implemented |
-| ---- | ----------- | :---------: |
-| D | Active Data Set Record | ✅ |
-| A | VSAM Association Information | ✅ |
-| V | Volume Information | ✅ |
-| M | Migrated Data Set Information | ❌ |
-| B | Backup Data Set Information | ❌ |
-| C | DASD Capacity Planning Information | ❌ |
-| T | Tape Capacity Planning Information | ❌ |
-| DC | Data Class Construct Information | ✅ |
-| SC | Storage Class Construct Information | ❌ |
-| MC | Management Class Construct Information | ❌ |
-| BC | Base Configuration Information | ❌ |
-| SG | Storage Group Construct Information | ❌ |
-| VL | Storage Group Volume Information | ❌ |
-| AG | Aggregate Group Information | ❌ |
-| DR | OAM Drive Record Information | ❌ |
-| LB | OAM Library Record Information | ❌ |
-| CN | Cache Names from Base Configuration Information | ❌ |
-| AI | Accounting Information from ACS Routines | ❌ |
+| Type | Description                                     | Implemented |
+| ---- | ----------------------------------------------- | :---------: |
+| D    | Active Data Set Record                          |     ✅      |
+| A    | VSAM Association Information                    |     ✅      |
+| V    | Volume Information                              |     ✅      |
+| M    | Migrated Data Set Information                   |     ❌      |
+| B    | Backup Data Set Information                     |     ❌      |
+| C    | DASD Capacity Planning Information              |     ❌      |
+| T    | Tape Capacity Planning Information              |     ❌      |
+| DC   | Data Class Construct Information                |     ✅      |
+| SC   | Storage Class Construct Information             |     ❌      |
+| MC   | Management Class Construct Information          |     ❌      |
+| BC   | Base Configuration Information                  |     ❌      |
+| SG   | Storage Group Construct Information             |     ❌      |
+| VL   | Storage Group Volume Information                |     ❌      |
+| AG   | Aggregate Group Information                     |     ❌      |
+| DR   | OAM Drive Record Information                    |     ❌      |
+| LB   | OAM Library Record Information                  |     ❌      |
+| CN   | Cache Names from Base Configuration Information |     ❌      |
+| AI   | Accounting Information from ACS Routines        |     ❌      |
 
 ## Notes
 
