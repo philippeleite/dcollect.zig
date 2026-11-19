@@ -292,6 +292,45 @@ test "jsonArray" {
     try std.testing.expectEqualStrings("[1,0,3]", try jsonArray(&buf, nums));
 }
 
+/// Formats an 8-byte z/Architecture STCK (TOD clock, bit 51 = 1 microsecond, epoch 1900-01-01)
+/// as "YYYY-MM-DD HH:MM:SS.mmm". Zero (or a pre-1970 value) gives "0000-00-00 00:00:00.000".
+/// shortcut: leap seconds are ignored, which is right when the TOD clock excludes them (the usual setup).
+pub fn stckTimestamp(buf: []u8, stck: []const u8) ![]const u8 {
+    if (stck.len != 8) return error.InvalidTimestamp;
+    const micros = std.mem.readInt(u64, stck[0..8], .big) >> 12;
+    const secs_1900 = micros / std.time.us_per_s;
+    const unix_offset: u64 = 2_208_988_800; // seconds from 1900-01-01 to 1970-01-01
+    if (secs_1900 < unix_offset) return std.fmt.bufPrint(buf, "0000-00-00 00:00:00.000", .{});
+    const es: std.time.epoch.EpochSeconds = .{ .secs = secs_1900 - unix_offset };
+    const yd = es.getEpochDay().calculateYearDay();
+    const md = yd.calculateMonthDay();
+    const ds = es.getDaySeconds();
+    return std.fmt.bufPrint(buf, "{d}-{d:02}-{d:02} {d:02}:{d:02}:{d:02}.{d:03}", .{
+        yd.year,                   md.month.numeric(),       md.day_index + 1,
+        ds.getHoursIntoDay(),      ds.getMinutesIntoHour(),  ds.getSecondsIntoMinute(),
+        (micros % std.time.us_per_s) / 1000,
+    });
+}
+
+test "stckTimestamp" {
+    var buf: [23]u8 = undefined;
+    try std.testing.expectEqualStrings("1970-01-01 00:00:00.000", try stckTimestamp(&buf, &.{ 0x7D, 0x91, 0x04, 0x8B, 0xCA, 0x00, 0x00, 0x00 }));
+    try std.testing.expectEqualStrings("2024-02-29 12:34:56.789", try stckTimestamp(&buf, &.{ 0xDE, 0xB9, 0x4C, 0x56, 0x70, 0x60, 0x80, 0x00 }));
+    try std.testing.expectEqualStrings("1999-12-31 23:59:59.999", try stckTimestamp(&buf, &.{ 0xB3, 0x61, 0x18, 0x3F, 0x47, 0xC1, 0x80, 0x00 }));
+    try std.testing.expectEqualStrings("0000-00-00 00:00:00.000", try stckTimestamp(&buf, &.{ 0, 0, 0, 0, 0, 0, 0, 0 }));
+}
+
+/// Formats a 4-byte packed-decimal time (hhmmssth) as "hh:mm:ss.th".
+pub fn pdtime(buf: []u8, time: []const u8) ![]const u8 {
+    if (time.len != 4) return error.InvalidTime;
+    return std.fmt.bufPrint(buf, "{x:02}:{x:02}:{x:02}.{x:02}", .{ time[0], time[1], time[2], time[3] });
+}
+
+test "pdtime" {
+    var buf: [11]u8 = undefined;
+    try std.testing.expectEqualStrings("13:45:25.07", try pdtime(&buf, &.{ 0x13, 0x45, 0x25, 0x07 }));
+}
+
 /// Trims trailing blanks and X'00' padding from an already-ASCII field.
 pub fn trimPad(s: []const u8) []const u8 {
     return std.mem.trimEnd(u8, s, " \x00");

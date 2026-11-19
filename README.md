@@ -63,6 +63,7 @@ Current tables created by the importer:
 - `record_bc`
 - `record_vl`
 - `record_ai`
+- `record_m`
 
 > Note: these tables are recreated during import (`DROP TABLE IF EXISTS ...`), so re-running the tool on the same database path replaces previous imported data.
 
@@ -258,7 +259,7 @@ LIMIT 5;
 | D    | Active Data Set Record                          |     ✅      |
 | A    | VSAM Association Information                    |     ✅      |
 | V    | Volume Information                              |     ✅      |
-| M    | Migrated Data Set Information                   |     ❌      |
+| M    | Migrated Data Set Information                   |    ✅ ¹     |
 | B    | Backup Data Set Information                     |     ❌      |
 | C    | DASD Capacity Planning Information              |     ❌      |
 | T    | Tape Capacity Planning Information              |     ❌      |
@@ -273,6 +274,8 @@ LIMIT 5;
 | LB   | OAM Library Record Information                  |     ❌      |
 | CN   | Cache Names from Base Configuration Information |     ❌      |
 | AI   | Accounting Information from ACS Routines        |     ✅      |
+
+¹ Implemented from the IBM documentation and covered by synthetic-record tests, but not yet validated against a real DCOLLECT file. Reports of mismatches are welcome.
 
 ## Notes
 

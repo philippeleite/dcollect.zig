@@ -32,7 +32,7 @@ The first build/test is slow (~1 min): it compiles `sqlite3.c` and runs `transla
 src/main.zig      entry point: ArgParser, FileParser (record loop), counters output, end-to-end test
 src/common.zig    Context, Database (SQLite wrapper), Binder, Header, record routing, genericProcess
 src/util.zig      EBCDIC<->ASCII tables (bcd2asc/asc2bcd), packed-date/time decoders, bitFlag, commaInt
-src/recordX.zig   one file per DCOLLECT record type (D, A, V, DC, SC, MC, SG, BC, VL, AI)
+src/recordX.zig   one file per DCOLLECT record type (D, A, V, DC, SC, MC, SG, BC, VL, AI, M)
 lib/sqlite/       vendored SQLite amalgamation (compiled with custom -D flags in build.zig)
 testdata/         git-ignored; holds the local sample file `testdata/DCOLLECT`
 .github/workflows/release.yml   builds Windows/Linux/macOS zips on `v*` tags
@@ -53,9 +53,10 @@ Copy an existing `src/recordX.zig` and follow the same shape:
 - `pub const RecordX = extern struct { header: Header, ... }` with field names matching IBM's DCOLLECT mapping (lowercase, e.g. `dcddsnam`). Reserved padding is `_resN: [n]u8`. Use `align(1)` on multi-byte fields that are not naturally aligned (e.g. `i64 align(1)`).
 - `pub const tableSQL` (`DROP TABLE IF EXISTS ...; CREATE TABLE record_x (...)`) and `pub const insertSQL` (`INSERT ... VALUES (?,...)`), both as Zig multiline strings.
 - Bit flags as `pub const <byte>_<name> = util.bitFlag(RecordX, "<field>", 0x80);`.
-- `pub inline fn bind(self: *RecordX, b: *common.Binder) !void`: bind **in exactly the same order** as the columns in `insertSQL`. Call `util.bcd2asc` on EBCDIC text fields before `b.text`. Convert dates with `util.dcdate` / `util.smfdate` and times with `util.smftime` into a local buffer.
+- `pub inline fn bind(self: *RecordX, b: *common.Binder) !void`: bind **in exactly the same order** as the columns in `insertSQL`. Call `util.bcd2asc` on EBCDIC text fields before `b.text`. Convert dates with `util.dcdate` (packed yyyydddF) / `util.smfdate`, times with `util.smftime` (binary hundredths) or `util.pdtime` (packed hhmmssth), and 8-byte STCK timestamps with `util.stckTimestamp`, into a local buffer.
 - Module-level exports: `pub const Record = RecordX;`, `pub const record_key = "X ";` (two chars, space-padded), `pub const process = common.genericProcess(@This());`.
-- A `test "record size"` asserting `@sizeOf(RecordX)` equals the length from IBM docs.
+- A `test "record size"` asserting `@sizeOf(RecordX)` equals the length from IBM docs, plus `@offsetOf` checks for the key fields.
+- If `testdata/DCOLLECT` has no record of that type, add a synthetic-record test (see `recordM.zig`): build the bytes big-endian/EBCDIC (`util.asc2bcd`), run them through `common.processRecord` on a `common.TestHarness` (in-memory DB) and check columns with `queryText`. Mark the type with ¹ ("not validated against real data") in the README matrix.
 - Register it in `record_modules` in `src/common.zig`, add expected counts to the test in `src/main.zig` if the sample file contains that type, and update the README tables (SQLite tables + implemented-types matrix).
 
 ## Conventions & gotchas

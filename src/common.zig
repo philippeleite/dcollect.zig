@@ -11,8 +11,9 @@ const SG = @import("recordSG.zig");
 const BC = @import("recordBC.zig");
 const VL = @import("recordVL.zig");
 const AI = @import("recordAI.zig");
+const M = @import("recordM.zig");
 
-const record_modules = .{ D, A, V, DC, SC, MC, SG, BC, VL, AI };
+const record_modules = .{ D, A, V, DC, SC, MC, SG, BC, VL, AI, M };
 
 pub const Context = struct {
     dcollect_file: []const u8 = undefined,
@@ -279,17 +280,43 @@ pub fn genericProcess(comptime m: type) procFn {
     }.process;
 }
 
+/// Test-only helper: an in-memory database plus a Context wired to it.
+/// Call `init` on a variable that stays put (the Context points back at `arena`).
+pub const TestHarness = struct {
+    arena: std.heap.ArenaAllocator,
+    ctx: Context,
+
+    pub fn init(self: *TestHarness) !void {
+        self.arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+        var in: std.process.Init = undefined;
+        in.arena = &self.arena;
+        in.gpa = std.testing.allocator;
+        in.io = std.testing.io;
+        self.ctx = Context.init(in);
+        self.ctx.db = try Database.init(self.arena.allocator(), ":memory:");
+    }
+
+    pub fn deinit(self: *TestHarness) void {
+        self.ctx.db.deinit();
+        self.ctx.deinit();
+        self.arena.deinit();
+    }
+
+    /// First column of the first row, as text (SQLite converts numbers).
+    pub fn queryText(self: *TestHarness, sql: [:0]const u8) ![]const u8 {
+        var stmt: ?Stmt = null;
+        if (c.sqlite3_prepare_v2(self.ctx.db.db, sql, -1, &stmt, null) != c.SQLITE_OK) return error.prepareStmt;
+        defer _ = c.sqlite3_finalize(stmt);
+        if (c.sqlite3_step(stmt) != c.SQLITE_ROW) return error.NoRows;
+        const txt = c.sqlite3_column_text(stmt, 0) orelse return "";
+        return self.arena.allocator().dupe(u8, std.mem.span(txt));
+    }
+};
+
 test "processRecord copes with short, misaligned records and rejects tiny ones" {
-    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
-    defer arena.deinit();
-    var init: std.process.Init = undefined;
-    init.arena = &arena;
-    init.gpa = std.testing.allocator;
-    init.io = std.testing.io;
-    var ctx = Context.init(init);
-    defer ctx.deinit();
-    ctx.db = try Database.init(arena.allocator(), ":memory:");
-    defer ctx.db.deinit();
+    var t: TestHarness = undefined;
+    try t.init();
+    defer t.deinit();
 
     // 33-byte SC record (real ones are 280 bytes) starting at an odd address.
     var storage: [34]u8 align(4) = @splat(0);
@@ -299,17 +326,12 @@ test "processRecord copes with short, misaligned records and rejects tiny ones" 
     record[5] = 0xC3; // 'C'
     std.mem.writeInt(u16, record[24..26], 3, .big); // DSCNMLEN
     @memcpy(record[26..29], &[_]u8{ 0xC1, 0xC2, 0xC3 }); // "ABC"
-    try processRecord(&ctx, record);
-    try std.testing.expectEqual(1, ctx.count.get("SC").?);
-
-    var stmt: ?Stmt = null;
-    try std.testing.expectEqual(c.SQLITE_OK, c.sqlite3_prepare_v2(ctx.db.db, "SELECT dscname, dsciacdl FROM record_sc", -1, &stmt, null));
-    defer _ = c.sqlite3_finalize(stmt);
-    try std.testing.expectEqual(c.SQLITE_ROW, c.sqlite3_step(stmt));
-    try std.testing.expectEqualStrings("ABC", std.mem.span(c.sqlite3_column_text(stmt, 0)));
-    try std.testing.expectEqual(0, c.sqlite3_column_int(stmt, 1)); // missing tail is zeroed
+    try processRecord(&t.ctx, record);
+    try std.testing.expectEqual(1, t.ctx.count.get("SC").?);
+    try std.testing.expectEqualStrings("ABC", try t.queryText("SELECT dscname FROM record_sc"));
+    try std.testing.expectEqualStrings("0", try t.queryText("SELECT dsciacdl FROM record_sc")); // missing tail is zeroed
 
     var tiny: [10]u8 = @splat(0);
-    try std.testing.expectError(error.InvalidRecordLength, processRecord(&ctx, &tiny));
-    try std.testing.expectError(error.InvalidRecordLength, processRecord(&ctx, tiny[0..0]));
+    try std.testing.expectError(error.InvalidRecordLength, processRecord(&t.ctx, &tiny));
+    try std.testing.expectError(error.InvalidRecordLength, processRecord(&t.ctx, tiny[0..0]));
 }
